@@ -1,0 +1,211 @@
+﻿.landing-page {
+    --pc-blue: #164bff;
+    --pc-blue-dark: #0d36cc;
+    --pc-ink: #0b143b;
+    --pc-muted: #4c5a7a;
+    --pc-line: #e1e9fb;
+    margin: 0;
+    color: var(--pc-ink);
+    background: #ffffff;
+    font-family: "Segoe UI", Arial, sans-serif;
+}
+
+    .landing-page .pc-shell {
+        max-width: 1536px;
+        padding-inline: clamp(20px, 4.7vw, 72px);
+    }
+
+    .landing-page .pc-header {
+        padding-block: 20px;
+    }
+
+    .landing-page .pc-brand {
+        flex-shrink: 0;
+        color: var(--pc-ink);
+        font-size: clamp(22px, 1.8vw, 28px);
+        font-weight: 700;
+        text-decoration: none;
+        white-space: nowrap;
+    }
+
+    .landing-page .pc-journey {
+        flex: 1;
+        min-width: 0;
+        width: 100%;
+        height: 76px;
+        object-fit: contain;
+    }
+    /* القسم الرئيسي */
+
+    .landing-page .pc-hero {
+        padding-block: 24px 32px;
+    }
+
+    .landing-page .pc-eyebrow {
+        color: var(--pc-blue);
+        font-size: 0.85rem;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+    }
+
+    .landing-page .pc-hero h1 {
+        font-size: clamp(2.2rem, 4vw, 3.85rem);
+        font-weight: 700;
+        line-height: 1.1;
+        letter-spacing: -0.045em;
+    }
+
+    .landing-page .pc-description {
+        max-width: 28rem;
+        color: var(--pc-muted);
+        font-size: 1.1rem;
+        line-height: 1.65;
+    }
+
+    .landing-page .pc-preview {
+        max-width: 48rem;
+        margin-inline: auto;
+    }
+
+        .landing-page .pc-preview img {
+            display: block;
+        }
+
+    .landing-page .pc-preview-caption {
+        padding-block: 8px;
+        color: var(--pc-muted);
+        font-size: 0.75rem;
+    }
+
+/* حجم العنوان على الجوال */
+
+@media (max-width: 575.98px) {
+    .landing-page .pc-hero h1 {
+        font-size: clamp(2rem, 8.4vw, 2.75rem);
+    }
+}
+/* How it works */
+
+.landing-page .pc-steps {
+    padding-block: 32px;
+    border-block: 1px solid var(--pc-line);
+    background: #f5f8ff;
+}
+
+    .landing-page .pc-steps h2 {
+        font-size: 1.6rem;
+        font-weight: 700;
+        line-height: 1.3;
+    }
+
+.landing-page .pc-step-number {
+    display: grid;
+    place-items: center;
+    flex: 0 0 38px;
+    height: 38px;
+    border-radius: 50%;
+    color: #ffffff;
+    background: var(--pc-blue);
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.landing-page .pc-steps h3 {
+    margin-bottom: 8px;
+    font-size: 1rem;
+    font-weight: 650;
+    line-height: 1.4;
+}
+
+.landing-page .pc-steps p {
+    margin: 0;
+    color: var(--pc-muted);
+    font-size: 0.9rem;
+    line-height: 1.65;
+}
+
+/* فواصل بين الخطوات عندما تظهر بجانب بعضها */
+
+@media (min-width: 768px) {
+    .landing-page .pc-steps li + li {
+        border-left: 1px solid var(--pc-line);
+    }
+}
+/* Latest positions */
+
+.landing-page #latest-positions h2 {
+    font-size: 1.6rem;
+    font-weight: 700;
+    line-height: 1.3;
+}
+
+.landing-page .pc-empty-state {
+    border: 1px solid var(--pc-line);
+    background: #fbfcff;
+    color: var(--pc-muted);
+    font-size: 0.95rem;
+    line-height: 1.65;
+}
+
+    .landing-page .pc-empty-state .fw-bold {
+        color: var(--pc-ink);
+    }
+
+/* الأزرار */
+
+.landing-page .pc-actions .btn {
+    min-height: 48px;
+    padding: 11px 26px;
+    border-radius: 5px;
+    font-weight: 600;
+}
+
+.landing-page .pc-actions .btn-primary {
+    color: #ffffff;
+    border-color: var(--pc-blue);
+    background-color: var(--pc-blue);
+}
+
+    .landing-page .pc-actions .btn-primary:hover,
+    .landing-page .pc-actions .btn-primary:active {
+        border-color: var(--pc-blue-dark);
+        background-color: var(--pc-blue-dark);
+    }
+
+.landing-page .pc-actions .btn-outline-primary {
+    color: var(--pc-blue);
+    border-color: var(--pc-blue);
+    background-color: transparent;
+}
+
+    .landing-page .pc-actions .btn-outline-primary:hover,
+    .landing-page .pc-actions .btn-outline-primary:active {
+        color: #ffffff;
+        background-color: var(--pc-blue);
+    }
+
+/* توضيح التركيز عند التنقل بلوحة المفاتيح */
+
+.landing-page .pc-actions .btn:focus-visible {
+    outline: 3px solid var(--pc-blue);
+    outline-offset: 4px;
+}
+
+/* رابط تصفح الوظائف */
+
+.landing-page .pc-text-link {
+    color: var(--pc-blue);
+    text-underline-offset: 4px;
+}
+
+    .landing-page .pc-text-link:hover {
+        color: var(--pc-blue-dark);
+    }
+
+/* توزيع الأزرار على الشاشات الصغيرة */
+
+@media (max-width: 575.98px) {
+    .landing-page .pc-actions .btn {
+        flex: 1 1 auto;
+    }
+}

@@ -1,8 +1,100 @@
 ﻿@{
-    ViewData["Title"] = "Home Page";
+    Layout = "_LandingLayout";
+    ViewData["Title"] = "Perfect Career";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-</div>
+@section Styles {
+    <link rel="stylesheet" href="~/css/pages_/landing.css" asp-append-version="true" />
+}
+
+<a class="visually-hidden-focusable pc-skip-link" href="#main-content">Skip to content</a>
+
+<header class="pc-header">
+    <div class="container-fluid pc-shell d-flex align-items-center gap-4 gap-lg-5">
+        <a class="pc-brand d-inline-flex align-items-center gap-2"
+           asp-area="" asp-controller="Home" asp-action="Index" aria-label="Perfect Career home">
+            <img src="~/images/landing/brand-mark.svg" width="48" height="56" alt="" />
+            <span>Perfect Career</span>
+        </a>
+        <img class="pc-journey d-none d-md-block" src="~/images/landing/career-journey.svg"
+             width="1080" height="88" alt="" aria-hidden="true" />
+    </div>
+</header>
+
+<main id="main-content" tabindex="-1">
+    <section class="container-fluid pc-shell pc-hero" aria-labelledby="hero-title">
+        <div class="row align-items-center gx-lg-5 gy-4">
+            <div class="col-lg-5 pc-hero-copy">
+                <p class="pc-eyebrow mb-4">CAREER PROFILE PLATFORM</p>
+                <h1 id="hero-title" class="mb-4">
+                    One profile.<br />Every opportunity.
+                </h1>
+                <p class="pc-description mb-4">
+                    Keep your experience in one place and generate a focused CV for every position.
+                </p>
+                <div class="pc-actions d-flex flex-wrap gap-3 mb-4">
+                    <a class="btn btn-primary" asp-area="Identity" asp-page="/Account/Register">
+                        Create account
+                    </a>
+                    <a class="btn btn-outline-primary" asp-area="Identity" asp-page="/Account/Login">
+                        Sign in
+                    </a>
+                </div>
+                <a class="pc-text-link" href="#latest-positions">Browse positions</a>
+            </div>
+            <div class="col-lg-7">
+                <figure class="pc-preview mb-0">
+                    <img class="img-fluid w-100" src="~/images/landing/profile-preview.png"
+                         width="1536" height="1024" fetchpriority="high"
+                         alt="Example profile editor showing skills and projects beside a tailored CV." />
+                    <figcaption class="pc-preview-caption text-center">Illustrative product preview</figcaption>
+                </figure>
+            </div>
+        </div>
+    </section>
+
+    <section class="pc-steps" aria-labelledby="steps-title">
+        <div class="container-fluid pc-shell">
+            <div class="row align-items-start gy-4">
+                <div class="col-lg-3">
+                    <h2 id="steps-title" class="mb-0">How it works</h2>
+                </div>
+                <div class="col-lg-9">
+                    <ol class="row gy-4 list-unstyled mb-0">
+                        <li class="col-md-4 d-flex gap-3">
+                            <span class="pc-step-number" aria-hidden="true">1</span>
+                            <div>
+                                <h3>Build your profile</h3>
+                                <p>Add your experience, skills, projects, and education.</p>
+                            </div>
+                        </li>
+                        <li class="col-md-4 d-flex gap-3">
+                            <span class="pc-step-number" aria-hidden="true">2</span>
+                            <div>
+                                <h3>Choose a position</h3>
+                                <p>Find a position that matches your next career step.</p>
+                            </div>
+                        </li>
+                        <li class="col-md-4 d-flex gap-3">
+                            <span class="pc-step-number" aria-hidden="true">3</span>
+                            <div>
+                                <h3>Generate your CV</h3>
+                                <p>Create a focused CV that highlights what matters for the role.</p>
+                            </div>
+                        </li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="latest-positions" class="container-fluid pc-shell py-4"
+             aria-labelledby="positions-title">
+        <h2 id="positions-title" class="mb-3">Latest positions</h2>
+        @* Replace this empty state with database results when positions are implemented. *@
+        <div class="pc-empty-state rounded-3 p-4">
+            <p class="fw-bold mb-1">No positions published yet.</p>
+            <p class="mb-0">Published positions will appear here.</p>
+        </div>
+    </section>
+</main>

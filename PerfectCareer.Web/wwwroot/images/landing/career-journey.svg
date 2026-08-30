@@ -1,0 +1,50 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg"
+     viewBox="0 0 1080 88"
+     fill="none"
+     stroke="#164bff"
+     stroke-width="1.7"
+     stroke-linecap="round"
+     stroke-linejoin="round">
+
+    <!-- الخط الذي يربط مراحل الرحلة المهنية -->
+    <path d="M12 45C48 17 80 37 105 49S157 59 183 48S222 43 249 59S301 75 333 52S396 19 434 41S503 77 540 54S600 14 643 42S700 69 737 53S795 28 837 48S896 74 928 53S983 28 1013 51S1052 50 1070 17" />
+
+    <!-- الملف الشخصي -->
+    <rect x="58" y="16" width="70" height="51" rx="5" fill="#fff" />
+    <circle cx="80" cy="35" r="6" />
+    <path d="M69 55v-4c0-8 22-8 22 0v4Z" />
+    <path d="M99 33h18M99 43h18M99 53h10" stroke="#a8c1ff" />
+
+    <!-- المهارات المترابطة -->
+    <g fill="#fff">
+        <path d="m258 39 28-17v36Z" />
+        <circle cx="258" cy="39" r="7" />
+        <circle cx="286" cy="22" r="7" />
+        <circle cx="286" cy="58" r="7" />
+    </g>
+
+    <!-- السيرة الذاتية -->
+    <path d="M456 9h32l14 14v55h-46a4 4 0 0 1-4-4V13a4 4 0 0 1 4-4Z"
+          fill="#fff" />
+    <path d="M488 9v15h14M463 38h28M463 48h28M463 58h28M463 68h19"
+          stroke="#a8c1ff" />
+    <path d="M463 24h11" />
+
+    <!-- الفرصة الوظيفية -->
+    <rect x="714" y="27" width="55" height="40" rx="4" fill="#fff" />
+    <path d="M732 27v-6a4 4 0 0 1 4-4h12a4 4 0 0 1 4 4v6M714 42q28 14 55 0" />
+    <rect x="737" y="44" width="10" height="9" rx="1" fill="#fff" />
+
+    <!-- الإنجاز والتقدم -->
+    <path d="m1026 13 5 12 13 1-10 9 3 13-11-7-11 7 3-13-10-9 13-1Z"
+          fill="#fff" />
+    <path d="m1058 19 13-4-1 15" />
+
+    <!-- تفاصيل خفيفة -->
+    <g stroke="#8aa9ff">
+        <path d="M2 56h6M5 53v6M324 44h6M327 41v6M662 26h6M665 23v6M817 56h6M820 53v6" />
+        <circle cx="180" cy="49" r="4" fill="#fff" />
+        <circle cx="526" cy="68" r="2" />
+        <circle cx="953" cy="35" r="3" />
+    </g>
+</svg>
