@@ -1,0 +1,84 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>@ViewData["Title"]</title>
+
+    <meta name="description"
+          content="Sign in or create your Perfect Career account." />
+
+    <link rel="stylesheet"
+          href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700;800&display=swap" />
+
+    <link rel="stylesheet"
+          href="~/css/Pages_/auth.css"
+          asp-append-version="true" />
+</head>
+
+<body class="pc-auth-page">
+    <a class="visually-hidden-focusable" href="#main-content">
+        Skip to content
+    </a>
+
+    <header class="pc-auth-header">
+        <div class="container-fluid pc-auth-shell d-flex align-items-center justify-content-between">
+            <a class="pc-auth-brand d-inline-flex align-items-center gap-2"
+               asp-area=""
+               asp-controller="Home"
+               asp-action="Index">
+                <img src="~/images/landing/brand-mark.svg"
+                     width="40"
+                     height="47"
+                     alt="" />
+                <span>Perfect Career</span>
+            </a>
+
+            <a class="pc-auth-back"
+               asp-area=""
+               asp-controller="Home"
+               asp-action="Index">
+                <span aria-hidden="true">←</span>
+                Back to home
+            </a>
+        </div>
+    </header>
+
+    <main id="main-content" class="pc-auth-main" tabindex="-1">
+        <div class="container-fluid pc-auth-shell">
+            <div class="row align-items-stretch g-4 g-lg-5">
+                <aside class="col-lg-6 d-none d-lg-block">
+                    <div class="pc-auth-visual h-100">
+                        <p class="pc-auth-eyebrow">
+                            CAREER PROFILE PLATFORM
+                        </p>
+
+                        <h2>Your next opportunity starts here.</h2>
+                        <p>One profile. Every opportunity.</p>
+
+                        <img class="img-fluid"
+                             src="~/images/landing/profile-preview.png"
+                             alt=""
+                             aria-hidden="true" />
+                    </div>
+                </aside>
+
+                <section class="col-lg-6 d-flex align-items-center">
+                    <div class="pc-auth-form-container w-100">
+                        @RenderBody()
+                    </div>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

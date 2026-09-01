@@ -1,0 +1,152 @@
+﻿@page
+@model RegisterModel
+
+@{
+    Layout = "/Views/Shared/_AuthLayout.cshtml";
+    ViewData["Title"] = "Create account | Perfect Career";
+}
+
+<h1>Create your account</h1>
+
+<p class="pc-auth-subtitle">
+    Start building your professional profile.
+</p>
+
+<form id="registerForm"
+      asp-route-returnUrl="@Model.ReturnUrl"
+      method="post"
+      class="pc-auth-form">
+
+    <div asp-validation-summary="ModelOnly"
+         class="text-danger mb-3"
+         role="alert"></div>
+
+    <div class="mb-3">
+        <label asp-for="Input.Email" class="form-label">
+            Email address
+        </label>
+
+        <input asp-for="Input.Email"
+               class="form-control"
+               autocomplete="username"
+               placeholder="you@example.com"
+               aria-required="true" />
+
+        <span asp-validation-for="Input.Email"
+              class="text-danger"></span>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-sm-6">
+            <label asp-for="Input.Password" class="form-label">
+                Password
+            </label>
+
+            <input asp-for="Input.Password"
+                   class="form-control"
+                   autocomplete="new-password"
+                   aria-required="true" />
+
+            <span asp-validation-for="Input.Password"
+                  class="text-danger"></span>
+        </div>
+
+        <div class="col-sm-6">
+            <label asp-for="Input.ConfirmPassword" class="form-label">
+                Confirm password
+            </label>
+
+            <input asp-for="Input.ConfirmPassword"
+                   class="form-control"
+                   autocomplete="new-password"
+                   aria-required="true" />
+
+            <span asp-validation-for="Input.ConfirmPassword"
+                  class="text-danger"></span>
+        </div>
+    </div>
+
+    <p class="pc-password-hint">
+        Use at least 6 characters.
+    </p>
+
+    <fieldset class="pc-role-group">
+        <legend class="form-label">Account type</legend>
+
+        <div class="row g-2">
+            <div class="col-sm-6">
+                <div class="pc-role-card pc-role-card-selected">
+                    <span class="pc-role-indicator"
+                          aria-hidden="true"></span>
+
+                    <span>
+                        <strong>Candidate</strong>
+                        <small>Create your profile and CVs.</small>
+                    </span>
+                </div>
+            </div>
+
+            <div class="col-sm-6">
+                <div class="pc-role-card pc-role-card-disabled"
+                     aria-disabled="true">
+                    <span class="pc-role-indicator"
+                          aria-hidden="true"></span>
+
+                    <span>
+                        <span class="d-flex align-items-center gap-2">
+                            <strong>Recruiter</strong>
+                            <span class="badge rounded-pill">
+                                Coming soon
+                            </span>
+                        </span>
+
+                        <small>Recruiter access is not available yet.</small>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </fieldset>
+
+    <button id="registerSubmit"
+            type="submit"
+            class="btn btn-primary w-100">
+        Create account
+    </button>
+
+    <p class="pc-auth-switch text-center mb-0">
+        Already have an account?
+
+        <a asp-page="./Login"
+           asp-route-returnUrl="@Model.ReturnUrl">
+            Sign in
+        </a>
+    </p>
+</form>
+
+@if ((Model.ExternalLogins?.Count ?? 0) > 0)
+{
+    <div class="pc-auth-divider">
+        <span>or continue with</span>
+    </div>
+
+    <form id="external-account"
+          asp-page="./ExternalLogin"
+          asp-route-returnUrl="@Model.ReturnUrl"
+          method="post"
+          class="d-grid gap-2">
+
+        @foreach (var provider in Model.ExternalLogins!)
+        {
+            <button type="submit"
+                    class="btn btn-outline-primary"
+                    name="provider"
+                    value="@provider.Name">
+                Continue with @provider.DisplayName
+            </button>
+        }
+    </form>
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
