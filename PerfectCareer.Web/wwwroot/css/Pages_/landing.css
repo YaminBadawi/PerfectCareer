@@ -89,12 +89,6 @@
             display: block;
         }
 
-    .landing-page .pc-preview-caption {
-        padding-block: 8px;
-        color: var(--pc-muted);
-        font-size: 0.75rem;
-    }
-
     /* Actions */
 
     .landing-page .pc-actions .btn {

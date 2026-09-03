@@ -1,0 +1,171 @@
+﻿@model PerfectCareer.Web.ViewModels.Profiles.CandidateProfileEditViewModel
+
+@{
+    ViewData["Title"] = "Edit profile";
+
+    var hasCurrentPhoto =
+        !string.IsNullOrWhiteSpace(Model.PersonalPhotoUrl);
+}
+
+@section Styles {
+    <link rel="stylesheet"
+          href="~/css/Pages_/profile.css"
+          asp-append-version="true" />
+}
+
+<div class="pc-profile-page pc-edit-page">
+    <div class="container-xl pc-profile-shell">
+
+        <div class="pc-edit-heading">
+            <div>
+                <p class="pc-card-eyebrow">CANDIDATE PROFILE</p>
+                <h1>Edit your profile</h1>
+                <p>
+                    Complete the required information used throughout
+                    your profile and CVs.
+                </p>
+            </div>
+
+            <a class="btn btn-outline-secondary"
+               asp-controller="CandidateProfile"
+               asp-action="Index">
+                Cancel
+            </a>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-lg-8">
+                <section class="pc-profile-card pc-edit-card">
+                    <form asp-controller="CandidateProfile"
+                          asp-action="Edit"
+                          method="post">
+
+                        <div asp-validation-summary="ModelOnly"
+                             class="alert alert-danger"
+                             role="alert">
+                        </div>
+
+                        @if (Model.RowVersion is not null)
+                        {
+                            <input type="hidden"
+                                   name="RowVersion"
+                                   value="@Convert.ToBase64String(Model.RowVersion)" />
+                        }
+
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <label asp-for="FirstName"
+                                       class="form-label">
+                                </label>
+
+                                <input asp-for="FirstName"
+                                       class="form-control"
+                                       autocomplete="given-name"
+                                       aria-required="true" />
+
+                                <span asp-validation-for="FirstName"
+                                      class="text-danger">
+                                </span>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="LastName"
+                                       class="form-label">
+                                </label>
+
+                                <input asp-for="LastName"
+                                       class="form-control"
+                                       autocomplete="family-name"
+                                       aria-required="true" />
+
+                                <span asp-validation-for="LastName"
+                                      class="text-danger">
+                                </span>
+                            </div>
+
+                            <div class="col-12">
+                                <label asp-for="Location"
+                                       class="form-label">
+                                </label>
+
+                                <input asp-for="Location"
+                                       class="form-control"
+                                       autocomplete="address-level2"
+                                       placeholder="City, Country"
+                                       aria-required="true" />
+
+                                <span asp-validation-for="Location"
+                                      class="text-danger">
+                                </span>
+                            </div>
+
+                            <div class="col-12">
+                                <label asp-for="PersonalPhotoUrl"
+                                       class="form-label">
+                                </label>
+
+                                <input asp-for="PersonalPhotoUrl"
+                                       type="url"
+                                       class="form-control"
+                                       autocomplete="url"
+                                       placeholder="https://example.com/photo.jpg"
+                                       aria-required="true" />
+
+                                <span asp-validation-for="PersonalPhotoUrl"
+                                      class="text-danger">
+                                </span>
+
+                                <p class="pc-field-help">
+                                    Enter an HTTP or HTTPS link to an image
+                                    stored on an external cloud service.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="pc-edit-actions">
+                            <button type="submit"
+                                    class="btn btn-primary">
+                                Save profile
+                            </button>
+
+                            <a class="btn btn-light"
+                               asp-controller="CandidateProfile"
+                               asp-action="Index">
+                                Cancel
+                            </a>
+                        </div>
+                    </form>
+                </section>
+            </div>
+
+            <div class="col-lg-4">
+                <aside class="pc-profile-card pc-photo-card">
+                    <p class="pc-card-eyebrow">PREVIEW</p>
+                    <h2>Personal photo</h2>
+
+                    <div class="pc-edit-photo-preview">
+                        @if (hasCurrentPhoto)
+                        {
+                            <img src="@Model.PersonalPhotoUrl"
+                                 alt="Current personal photo"
+                                 referrerpolicy="no-referrer" />
+                        }
+                        else
+                        {
+                            <span aria-hidden="true">Photo</span>
+                        }
+                    </div>
+
+                    <p>
+                        Your database stores only the external image URL,
+                        not the image file itself.
+                    </p>
+                </aside>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

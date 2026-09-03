@@ -1,50 +1,157 @@
-﻿<!DOCTYPE html>
+﻿@{
+    var currentController =
+        ViewContext.RouteData.Values["controller"]?.ToString();
+
+    var profileIsActive = string.Equals(
+        currentController,
+        "CandidateProfile",
+        StringComparison.OrdinalIgnoreCase);
+
+    var accountName =
+        User.Identity?.Name ?? "Account";
+
+    var accountInitial =
+        string.IsNullOrWhiteSpace(accountName)
+            ? "A"
+            : accountName[..1].ToUpperInvariant();
+}
+
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - PerfectCareer.Web</title>
-    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/PerfectCareer.Web.styles.css" asp-append-version="true" />
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1" />
+
+    <title>@ViewData["Title"] | Perfect Career</title>
+
+    <link rel="stylesheet"
+          href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700;800&display=swap" />
+
+    <link rel="stylesheet"
+          href="~/css/site.css"
+          asp-append-version="true" />
+
+    <link rel="stylesheet"
+          href="~/PerfectCareer.Web.styles.css"
+          asp-append-version="true" />
+
+    @await RenderSectionAsync("Styles", required: false)
 </head>
-<body>
-    <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">PerfectCareer.Web</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
+
+<body class="pc-app-page">
+    <header class="pc-app-header">
+        <nav class="navbar navbar-expand-md navbar-light">
+            <div class="container-xl">
+                <a class="pc-brand d-inline-flex align-items-center gap-2" asp-area=""
+                   asp-controller="CandidateProfile"
+                   asp-action="Index">
+
+                    <img src="~/images/landing/brand-mark.svg"
+                         width="40"
+                         height="47"
+                         alt="" />
+
+                    <span>Perfect Career</span>
+                </a>
+
+                <button class="navbar-toggler"
+                        type="button"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#appNavigation"
+                        aria-controls="appNavigation"
+                        aria-expanded="false"
+                        aria-label="Toggle navigation">
+
                     <span class="navbar-toggler-icon"></span>
                 </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
+
+                <div id="appNavigation"
+                     class="collapse navbar-collapse">
+
+                    <ul class="navbar-nav mx-auto gap-md-3">
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
+                            <a class="nav-link @(profileIsActive ? "active" : null)"
+                               asp-area=""
+                               asp-controller="CandidateProfile"
+                               asp-action="Index"
+                               aria-current="@(profileIsActive ? "page" : null)">
+                                Profile
+                            </a>
                         </li>
+
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+                            <span class="nav-link disabled"
+                                  aria-disabled="true">
+                                Positions
+                            </span>
+                        </li>
+
+                        <li class="nav-item">
+                            <span class="nav-link disabled"
+                                  aria-disabled="true">
+                                My CVs
+                            </span>
                         </li>
                     </ul>
-                    <partial name="_LoginPartial" />
+
+                    <div class="dropdown">
+                        <button class="btn pc-account-button dropdown-toggle"
+                                type="button"
+                                data-bs-toggle="dropdown"
+                                aria-expanded="false">
+
+                            <span class="pc-account-avatar"
+                                  aria-hidden="true">
+                                @accountInitial
+                            </span>
+
+                            <span class="d-none d-lg-inline">
+                                @accountName
+                            </span>
+                        </button>
+
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                                <a class="dropdown-item"
+                                   asp-area=""
+                                   asp-controller="CandidateProfile"
+                                   asp-action="Index">
+                                    My profile
+                                </a>
+                            </li>
+
+                            <li><hr class="dropdown-divider" /></li>
+
+                            <li>
+                                <form asp-area="Identity"
+                                      asp-page="/Account/Logout"
+                                      asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })"
+                                      method="post">
+
+                                    <button type="submit"
+                                            class="dropdown-item">
+                                        Sign out
+                                    </button>
+                                </form>
+                            </li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </nav>
     </header>
-    <div class="container">
-        <main role="main" class="pb-3">
-            @RenderBody()
-        </main>
-    </div>
 
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 1448 - PerfectCareer.Web - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-        </div>
-    </footer>
+    <main>
+        @RenderBody()
+    </main>
+
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>
+
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

@@ -1,0 +1,229 @@
+﻿@model PerfectCareer.Web.ViewModels.Profiles.CandidateProfileDetailsViewModel
+
+@{
+    ViewData["Title"] = "My profile";
+
+    var hasPhoto =
+        Model.HasProfile &&
+        !string.IsNullOrWhiteSpace(Model.PersonalPhotoUrl);
+}
+
+@section Styles {
+    <link rel="stylesheet"
+          href="~/css/Pages_/profile.css"
+          asp-append-version="true" />
+}
+
+<div class="pc-profile-page">
+    <div class="container-xl pc-profile-shell">
+
+        @if (TempData["ProfileMessage"] is string message)
+        {
+            <div class="alert alert-success alert-dismissible fade show"
+                 role="alert">
+                @message
+
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="alert"
+                        aria-label="Close">
+                </button>
+            </div>
+        }
+
+        <section class="pc-profile-hero">
+            <div class="pc-profile-cover"
+                 aria-hidden="true">
+            </div>
+
+            <div class="pc-profile-summary">
+                <div class="pc-profile-avatar">
+                    @if (hasPhoto)
+                    {
+                        <img src="@Model.PersonalPhotoUrl"
+                             alt="@Model.FullName"
+                             referrerpolicy="no-referrer" />
+                    }
+                    else
+                    {
+                        <span>@Model.Initials</span>
+                    }
+                </div>
+
+                <div class="pc-profile-identity">
+                    <h1>@Model.FullName</h1>
+
+                    <p class="pc-profile-role">
+                        Candidate
+                    </p>
+
+                    @if (Model.HasProfile)
+                    {
+                        <p class="pc-profile-location">
+                            @Model.Location
+                        </p>
+                    }
+                    else
+                    {
+                        <p class="pc-profile-location">
+                            Add your required profile information.
+                        </p>
+                    }
+                </div>
+
+                <div class="pc-profile-completion">
+                    <div class="d-flex justify-content-between gap-3">
+                        <span>Profile completion</span>
+                        <strong>@Model.CompletionPercentage%</strong>
+                    </div>
+
+                    <div class="progress"
+                         role="progressbar"
+                         aria-label="Profile completion"
+                         aria-valuenow="@Model.CompletionPercentage"
+                         aria-valuemin="0"
+                         aria-valuemax="100">
+
+                        <div class="progress-bar"
+                             style="width: @(Model.CompletionPercentage)%">
+                        </div>
+                    </div>
+                </div>
+
+                <a class="btn btn-primary pc-edit-profile"
+                   asp-controller="CandidateProfile"
+                   asp-action="Edit">
+
+                    @(Model.HasProfile
+                        ? "Edit profile"
+                        : "Complete profile")
+                </a>
+            </div>
+        </section>
+
+        <nav class="pc-profile-tabs"
+             aria-label="Profile sections">
+
+            <span class="pc-profile-tab active"
+                  aria-current="page">
+                Overview
+            </span>
+
+            <span class="pc-profile-tab disabled"
+                  aria-disabled="true">
+                Skills &amp; info
+            </span>
+
+            <span class="pc-profile-tab disabled"
+                  aria-disabled="true">
+                Projects
+            </span>
+        </nav>
+
+        <div class="row g-4">
+            <div class="col-lg-8">
+                <section class="pc-profile-card">
+                    <div class="pc-card-heading">
+                        <div>
+                            <p class="pc-card-eyebrow">OVERVIEW</p>
+                            <h2>Personal information</h2>
+                        </div>
+
+                        <span class="badge pc-required-badge">
+                            Required
+                        </span>
+                    </div>
+
+                    <dl class="pc-info-list">
+                        <div class="pc-info-row">
+                            <dt>First name</dt>
+                            <dd>
+                                @(Model.HasProfile
+                                    ? Model.FirstName
+                                    : "Not added")
+                            </dd>
+                        </div>
+
+                        <div class="pc-info-row">
+                            <dt>Last name</dt>
+                            <dd>
+                                @(Model.HasProfile
+                                    ? Model.LastName
+                                    : "Not added")
+                            </dd>
+                        </div>
+
+                        <div class="pc-info-row">
+                            <dt>Location</dt>
+                            <dd>
+                                @(Model.HasProfile
+                                    ? Model.Location
+                                    : "Not added")
+                            </dd>
+                        </div>
+
+                        <div class="pc-info-row">
+                            <dt>Personal photo</dt>
+                            <dd>
+                                @(hasPhoto
+                                    ? "Added"
+                                    : "Not added")
+                            </dd>
+                        </div>
+                    </dl>
+                </section>
+            </div>
+
+            <div class="col-lg-4">
+                <aside class="pc-profile-card pc-readiness-card">
+                    <p class="pc-card-eyebrow">STATUS</p>
+                    <h2>Profile readiness</h2>
+
+                    <ul class="pc-readiness-list">
+                        <li class="complete">
+                            <span aria-hidden="true">✓</span>
+                            Account created
+                        </li>
+
+                        <li class="@(Model.HasProfile ? "complete" : null)">
+                            <span aria-hidden="true">
+                                @(Model.HasProfile ? "✓" : "○")
+                            </span>
+                            Required information
+                        </li>
+
+                        <li class="@(hasPhoto ? "complete" : null)">
+                            <span aria-hidden="true">
+                                @(hasPhoto ? "✓" : "○")
+                            </span>
+                            Personal photo
+                        </li>
+                    </ul>
+
+                    <a class="btn btn-outline-primary w-100"
+                       asp-controller="CandidateProfile"
+                       asp-action="Edit">
+                        Continue profile
+                    </a>
+                </aside>
+            </div>
+        </div>
+
+        <section class="pc-profile-card pc-additional-card">
+            <div class="pc-card-heading">
+                <div>
+                    <p class="pc-card-eyebrow">OPTIONAL</p>
+                    <h2>Additional information</h2>
+                </div>
+            </div>
+
+            <div class="pc-empty-state">
+                <h3>No additional information yet</h3>
+                <p>
+                    Skills and reusable profile information will appear
+                    here after they are added.
+                </p>
+            </div>
+        </section>
+    </div>
+</div>

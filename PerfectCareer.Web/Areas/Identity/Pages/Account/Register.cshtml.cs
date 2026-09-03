@@ -60,6 +60,7 @@ public class RegisterModel : PageModel
 
     public async Task OnGetAsync(string returnUrl = null)
     {
+        returnUrl ??= Url.Content("~/CandidateProfile");
         ReturnUrl = returnUrl;
 
         ExternalLogins =
@@ -69,7 +70,8 @@ public class RegisterModel : PageModel
 
     public async Task<IActionResult> OnPostAsync(string returnUrl = null)
     {
-        returnUrl ??= Url.Content("~/");
+        returnUrl ??= Url.Content("~/CandidateProfile");
+        ReturnUrl = returnUrl;
 
         ExternalLogins =
             (await _signInManager.GetExternalAuthenticationSchemesAsync())

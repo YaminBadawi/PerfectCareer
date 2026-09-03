@@ -1,48 +1,172 @@
-﻿/* Please see documentation at https://learn.microsoft.com/aspnet/core/client-side/bundling-and-minification
-for details on configuring this project to bundle and minify static web assets. */
-
-a.navbar-brand {
-  white-space: normal;
-  text-align: center;
-  word-break: break-all;
+﻿.pc-app-page {
+    min-height: 100vh;
+    margin: 0;
+    color: #071849;
+    background: #f6f8fc;
+    font-family: "Roboto", "Segoe UI", Arial, sans-serif;
 }
 
-a {
-  color: #0077cc;
+.pc-app-header {
+    min-height: 76px;
+    border-bottom: 1px solid #dce5f5;
+    background: #ffffff;
 }
 
-.btn-primary {
-  color: #fff;
-  background-color: #1b6ec2;
-  border-color: #1861ac;
+    .pc-app-header .navbar {
+        min-height: 76px;
+        padding-block: 0;
+    }
+
+    .pc-app-header .container-xl {
+        width: 100%;
+        max-width: 1440px;
+        margin-inline: auto;
+        padding-inline: clamp(24px, 5vw, 80px);
+    }
+
+    .pc-app-header ::deep .pc-brand {
+        flex-shrink: 0;
+        color: #071849;
+        font-size: 1.55rem;
+        font-weight: 700;
+        letter-spacing: -0.025em;
+        text-decoration: none;
+        white-space: nowrap;
+    }
+
+        .pc-app-header ::deep .pc-brand:hover,
+        .pc-app-header ::deep .pc-brand:focus {
+            color: #071849;
+            text-decoration: none;
+        }
+
+        .pc-app-header ::deep .pc-brand img {
+            width: 40px;
+            height: 47px;
+            flex: 0 0 auto;
+        }
+
+    .pc-app-header ::deep .navbar-nav .nav-link {
+        position: relative;
+        padding: 27px 12px 23px;
+        color: #34415f;
+        font-weight: 500;
+    }
+
+        .pc-app-header ::deep .navbar-nav .nav-link:hover,
+        .pc-app-header ::deep .navbar-nav .nav-link:focus {
+            color: #165dff;
+        }
+
+        .pc-app-header ::deep .navbar-nav .nav-link.active {
+            color: #165dff;
+            font-weight: 700;
+        }
+
+            .pc-app-header ::deep .navbar-nav .nav-link.active::after {
+                content: "";
+                position: absolute;
+                right: 12px;
+                bottom: 0;
+                left: 12px;
+                height: 3px;
+                border-radius: 3px 3px 0 0;
+                background: #165dff;
+            }
+
+        .pc-app-header ::deep .navbar-nav .nav-link.disabled {
+            color: #929cb0;
+            opacity: 0.7;
+            cursor: default;
+        }
+
+.pc-account-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    border: 0;
+    color: #071849;
+    background: transparent;
+    font-weight: 500;
 }
 
-.nav-pills .nav-link.active, .nav-pills .show > .nav-link {
-  color: #fff;
-  background-color: #1b6ec2;
-  border-color: #1861ac;
+    .pc-account-button:hover,
+    .pc-account-button:focus,
+    .pc-account-button.show {
+        color: #071849;
+        background: #f3f7ff;
+    }
+
+.pc-account-avatar {
+    display: inline-grid;
+    width: 36px;
+    height: 36px;
+    place-items: center;
+    border-radius: 50%;
+    color: #ffffff;
+    background: #165dff;
+    font-size: 0.85rem;
+    font-weight: 700;
 }
 
-.border-top {
-  border-top: 1px solid #e5e5e5;
-}
-.border-bottom {
-  border-bottom: 1px solid #e5e5e5;
-}
-
-.box-shadow {
-  box-shadow: 0 .25rem .75rem rgba(0, 0, 0, .05);
+.pc-app-header ::deep .dropdown-menu {
+    min-width: 180px;
+    padding: 8px;
+    border-color: #dce5f5;
+    border-radius: 10px;
+    box-shadow: 0 12px 30px rgba(7, 24, 73, 0.1);
 }
 
-button.accept-policy {
-  font-size: 1rem;
-  line-height: inherit;
+.pc-app-header ::deep .dropdown-item {
+    padding: 9px 12px;
+    border-radius: 6px;
+    color: #071849;
 }
 
-.footer {
-  position: absolute;
-  bottom: 0;
-  width: 100%;
-  white-space: nowrap;
-  line-height: 60px;
+    .pc-app-header ::deep .dropdown-item:hover,
+    .pc-app-header ::deep .dropdown-item:focus {
+        color: #165dff;
+        background: #f3f7ff;
+    }
+
+.pc-app-page > main {
+    min-height: calc(100vh - 76px);
+}
+
+@media (max-width: 767.98px) {
+    .pc-app-header .navbar {
+        padding-block: 12px;
+    }
+
+    .pc-app-header ::deep .navbar-nav {
+        padding-block: 12px;
+    }
+
+        .pc-app-header ::deep .navbar-nav .nav-link {
+            padding: 10px 4px;
+        }
+
+            .pc-app-header ::deep .navbar-nav .nav-link.active::after {
+                display: none;
+            }
+
+    .pc-account-button {
+        margin-bottom: 8px;
+        padding-left: 4px;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .pc-app-header .container-xl {
+        padding-inline: 18px;
+    }
+
+    .pc-app-header ::deep .pc-brand {
+        font-size: 1.2rem;
+    }
+
+        .pc-app-header ::deep .pc-brand img {
+            width: 34px;
+            height: auto;
+        }
 }
