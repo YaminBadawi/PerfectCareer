@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Http;
 
 namespace PerfectCareer.Web.ViewModels.Profiles;
 
@@ -18,11 +19,12 @@ public sealed class CandidateProfileEditViewModel
     [StringLength(150)]
     public string Location { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "Personal photo URL is required.")]
     [StringLength(2048)]
-    [Url(ErrorMessage = "Enter a valid photo URL.")]
-    [Display(Name = "Personal photo URL")]
+    [Url(ErrorMessage = "The saved photo URL is invalid.")]
     public string PersonalPhotoUrl { get; set; } = string.Empty;
+
+    [Display(Name = "Personal photo")]
+    public IFormFile? PersonalPhotoFile { get; set; }
 
     public byte[]? RowVersion { get; set; }
 }

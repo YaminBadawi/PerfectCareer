@@ -1,0 +1,70 @@
+@model PerfectCareer.Web.ViewModels.Profiles.CandidateProfileDetailsViewModel
+
+@{
+    var hasPhoto = Model.HasProfile &&
+        !string.IsNullOrWhiteSpace(Model.PersonalPhotoUrl);
+
+    var infoIsActive = string.Equals(
+        ViewContext.RouteData.Values["action"]?.ToString(),
+        "Info",
+        StringComparison.OrdinalIgnoreCase);
+}
+
+<section class="pc-profile-hero position-relative">
+    <div class="pc-profile-cover position-absolute top-0 start-0 w-100 h-100"
+         aria-hidden="true"></div>
+
+    <div class="position-relative d-flex flex-wrap align-items-center gap-4 p-4">
+        <div class="pc-profile-avatar flex-shrink-0">
+            @if (hasPhoto)
+            {
+                <img src="@Model.PersonalPhotoUrl"
+                     alt="@Model.FullName"
+                     referrerpolicy="no-referrer" />
+            }
+            else
+            {
+                <span>@Model.Initials</span>
+            }
+        </div>
+
+        <div class="flex-grow-1">
+            <h1 class="h3 fw-bold mb-1 text-break">@Model.FullName</h1>
+            <p class="pc-profile-role">Candidate</p>
+            <p class="pc-profile-location">
+                @(Model.HasProfile
+                    ? Model.Location
+                    : "Add your required profile information.")
+            </p>
+        </div>
+
+        <a class="btn btn-primary pc-edit-profile ms-sm-auto"
+           asp-area=""
+           asp-controller="CandidateProfile"
+           asp-action="Edit">
+            @(Model.HasProfile ? "Edit profile" : "Complete profile")
+        </a>
+    </div>
+</section>
+
+<nav class="pc-profile-tabs" aria-label="Profile sections">
+    <a class="pc-profile-tab text-decoration-none @(!infoIsActive ? "active" : null)"
+       asp-area=""
+       asp-controller="CandidateProfile"
+       asp-action="Index"
+       aria-current="@(!infoIsActive ? "page" : null)">
+        Overview
+    </a>
+
+    <a class="pc-profile-tab text-decoration-none @(infoIsActive ? "active" : null)"
+       asp-area=""
+       asp-controller="CandidateProfile"
+       asp-action="Info"
+       aria-current="@(infoIsActive ? "page" : null)">
+        Skills &amp; Info
+    </a>
+
+    <span class="pc-profile-tab disabled" aria-disabled="true">
+        Projects
+    </span>
+</nav>

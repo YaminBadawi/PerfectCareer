@@ -1,0 +1,144 @@
+@model PerfectCareer.Web.ViewModels.Profiles.CandidateProfileDetailsViewModel
+
+@{
+    ViewData["Title"] = "Skills & Info";
+}
+
+@section Styles {
+    <link rel="stylesheet"
+          href="~/css/Pages_/profile.css"
+          asp-append-version="true" />
+}
+
+<div class="pc-profile-page">
+    <div class="container-xl pc-profile-shell">
+        <partial name="_ProfileHeader" model="Model" />
+
+        <section id="pc-info-editor" aria-labelledby="pc-info-title">
+            @Html.AntiForgeryToken()
+
+            <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+                <div>
+                    <h2 id="pc-info-title" class="h3 fw-bold mb-2">
+                        Skills &amp; Info
+                    </h2>
+                    <p class="text-muted mb-0">
+                        Choose attributes from the library and fill in your details.
+                    </p>
+                </div>
+
+                <p id="pc-info-save-status"
+                   class="small text-muted mb-0"
+                   role="status"
+                   aria-live="polite"
+                   aria-atomic="true">
+                    Not connected — changes are not saved.
+                </p>
+            </div>
+
+            <div id="pc-info-error" class="alert alert-danger" role="alert" hidden></div>
+
+            <div class="row g-4">
+                <div class="col-lg-7 col-xl-8">
+                    <section class="pc-profile-card d-flex flex-column"
+                             aria-labelledby="pc-info-selected-title">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+                            <h2 id="pc-info-selected-title" class="mb-0">
+                                Your attributes
+                            </h2>
+
+                            <button id="pc-info-remove-selected"
+                                    type="button"
+                                    class="btn btn-outline-primary"
+                                    disabled>
+                                Remove selected
+                            </button>
+                        </div>
+
+                        <div id="pc-info-values" class="flex-grow-1">
+                            <div class="pc-empty-state">
+                                <h3>Your selected attributes will appear here</h3>
+                                <p>
+                                    Library data is not connected yet.
+                                </p>
+                            </div>
+                        </div>
+
+                        <p id="pc-info-save-help" class="small text-muted border-top pt-3 mt-4 mb-0">
+                            Automatic saving is not connected yet.
+                        </p>
+                    </section>
+                </div>
+
+                <div class="col-lg-5 col-xl-4">
+                    <aside class="pc-profile-card" aria-labelledby="pc-info-library-title">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+                            <h2 id="pc-info-library-title" class="mb-0">
+                                Attribute Library
+                            </h2>
+
+                            <button id="pc-info-add-selected"
+                                    type="button"
+                                    class="btn btn-primary"
+                                    disabled>
+                                Add selected
+                            </button>
+                        </div>
+
+                        <p class="small text-muted">
+                            Select existing attributes to add to your profile.
+                        </p>
+
+                        <div class="mb-3">
+                            <label for="pc-info-search" class="visually-hidden">
+                                Search attributes by name prefix
+                            </label>
+                            <input id="pc-info-search"
+                                   type="search"
+                                   class="form-control"
+                                   placeholder="Search by name prefix..."
+                                   autocomplete="off"
+                                   disabled />
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="pc-info-category" class="visually-hidden">
+                                Attribute category
+                            </label>
+                            <select id="pc-info-category" class="form-select" disabled>
+                                <option value="">All categories</option>
+                            </select>
+                        </div>
+
+                        <div class="nav nav-tabs mb-3" role="group" aria-label="Attribute library filter">
+                            <button id="pc-info-filter-all"
+                                    type="button"
+                                    class="nav-link active"
+                                    aria-pressed="true"
+                                    disabled>
+                                All attributes
+                            </button>
+                            <button id="pc-info-filter-recent"
+                                    type="button"
+                                    class="nav-link"
+                                    aria-pressed="false"
+                                    disabled>
+                                Recently used
+                            </button>
+                        </div>
+
+                        <div id="pc-info-library-results">
+                            <p class="small text-muted py-4 mb-0">
+                                Available attributes will appear after the library is connected.
+                            </p>
+                        </div>
+
+                        <p class="small text-muted border-top pt-3 mt-3 mb-0">
+                            Select attributes, then choose Add selected.
+                        </p>
+                    </aside>
+                </div>
+            </div>
+        </section>
+    </div>
+</div>

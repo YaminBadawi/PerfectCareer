@@ -1,10 +1,13 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using PerfectCareer.Web.Authorization;
 using PerfectCareer.Web.Data;
+using PerfectCareer.Web.Models.Attributes;
 using PerfectCareer.Web.Models.Profiles;
+using PerfectCareer.Web.Services;
 using PerfectCareer.Web.ViewModels.Profiles;
 
 namespace PerfectCareer.Web.Controllers;
@@ -12,19 +15,45 @@ namespace PerfectCareer.Web.Controllers;
 [Authorize(Roles = AppRoles.Candidate)]
 public sealed class CandidateProfileController : Controller
 {
+    private const string ProfilePhotoFolder =
+        "perfect-career/profile-photos";
+
     private readonly ApplicationDbContext _context;
     private readonly UserManager<IdentityUser> _userManager;
+    private readonly CloudinaryImageService _imageService;
+    private readonly ILogger<CandidateProfileController> _logger;
 
     public CandidateProfileController(
         ApplicationDbContext context,
-        UserManager<IdentityUser> userManager)
+        UserManager<IdentityUser> userManager,
+        CloudinaryImageService imageService,
+        ILogger<CandidateProfileController> logger)
     {
         _context = context;
         _userManager = userManager;
+        _imageService = imageService;
+        _logger = logger;
     }
 
     [HttpGet]
-    public async Task<IActionResult> Index(
+    public Task<IActionResult> Index(
+        CancellationToken cancellationToken)
+        => RenderProfileAsync(
+            nameof(Index),
+            loadAttributes: false,
+            cancellationToken: cancellationToken);
+
+    [HttpGet]
+    public Task<IActionResult> Info(
+        CancellationToken cancellationToken)
+        => RenderProfileAsync(
+            nameof(Info),
+            loadAttributes: true,
+            cancellationToken: cancellationToken);
+
+    private async Task<IActionResult> RenderProfileAsync(
+        string viewName,
+        bool loadAttributes,
         CancellationToken cancellationToken)
     {
         var userId = _userManager.GetUserId(User);
@@ -40,17 +69,476 @@ public sealed class CandidateProfileController : Controller
                 item => item.UserId == userId,
                 cancellationToken);
 
-        var model = new CandidateProfileDetailsViewModel
-        {
-            HasProfile = profile is not null,
-            FirstName = profile?.FirstName ?? string.Empty,
-            LastName = profile?.LastName ?? string.Empty,
-            Location = profile?.Location ?? string.Empty,
-            PersonalPhotoUrl = profile?.PersonalPhotoUrl ?? string.Empty,
-            CompletionPercentage = profile is null ? 0 : 100
-        };
+        IReadOnlyList<AttributeLibraryItemViewModel> attributes =
+            Array.Empty<AttributeLibraryItemViewModel>();
 
-        return View(model);
+        if (loadAttributes)
+        {
+            var values = profile is null
+                ? Array.Empty<CandidateAttributeValue>()
+                : await _context.CandidateAttributeValues
+                    .AsNoTracking()
+                    .Where(item =>
+                        item.CandidateProfileId == profile.Id)
+                    .ToArrayAsync(cancellationToken);
+
+            var valuesByDefinitionId = values
+                .ToDictionary(
+                    item => item.AttributeDefinitionId);
+
+            var definitions =
+                await _context.AttributeDefinitions
+                    .AsNoTracking()
+                    .OrderBy(item => item.Category)
+                    .ThenBy(item => item.Name)
+                    .ToArrayAsync(cancellationToken);
+
+            var optionGroups =
+                (await _context.AttributeOptions
+                    .AsNoTracking()
+                    .OrderBy(item => item.Id)
+                    .ToArrayAsync(cancellationToken))
+                .GroupBy(
+                    item => item.AttributeDefinitionId)
+                .ToDictionary(
+                    group => group.Key,
+                    group => group
+                        .Select(option =>
+                            new AttributeOptionItemViewModel
+                            {
+                                Id = option.Id,
+                                Label = option.Label
+                            })
+                        .ToArray());
+
+            attributes = definitions
+                .Select(definition =>
+                {
+                    valuesByDefinitionId.TryGetValue(
+                        definition.Id,
+                        out var value);
+
+                    optionGroups.TryGetValue(
+                        definition.Id,
+                        out var options);
+
+                    return new AttributeLibraryItemViewModel
+                    {
+                        Id = definition.Id,
+                        Name = definition.Name,
+                        Description = definition.Description,
+                        Category = definition.Category,
+                        DataType = definition.DataType,
+                        IsBuiltIn = definition.IsBuiltIn,
+                        IsSelected =
+                            definition.IsBuiltIn ||
+                            value is not null,
+                        TextValue = value?.TextValue,
+                        NumberValue = value?.NumberValue,
+                        DateValue = value?.DateValue,
+                        PeriodStart = value?.PeriodStart,
+                        PeriodEnd = value?.PeriodEnd,
+                        BooleanValue = value?.BooleanValue,
+                        SelectedOptionId =
+                            value?.SelectedOptionId,
+                        ValueRowVersion = value is null
+                            ? string.Empty
+                            : Convert.ToBase64String(
+                                value.RowVersion),
+                        Options = options ??
+                            Array.Empty<AttributeOptionItemViewModel>()
+                    };
+                })
+                .ToArray();
+        }
+
+        var model =
+            new CandidateProfileDetailsViewModel
+            {
+                HasProfile = profile is not null,
+                FirstName =
+                    profile?.FirstName ?? string.Empty,
+                LastName =
+                    profile?.LastName ?? string.Empty,
+                Location =
+                    profile?.Location ?? string.Empty,
+                PersonalPhotoUrl =
+                    profile?.PersonalPhotoUrl ??
+                    string.Empty,
+                CompletionPercentage =
+                    profile is null ? 0 : 100,
+                Attributes = attributes
+            };
+
+        return View(viewName, model);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AddAttributes(
+        int[]? attributeIds,
+        CancellationToken cancellationToken)
+    {
+        var userId = _userManager.GetUserId(User);
+
+        if (userId is null)
+        {
+            return Challenge();
+        }
+
+        var profileId =
+            await _context.CandidateProfiles
+                .Where(item => item.UserId == userId)
+                .Select(item => (int?)item.Id)
+                .SingleOrDefaultAsync(cancellationToken);
+
+        if (profileId is null)
+        {
+            return RedirectToAction(nameof(Edit));
+        }
+
+        var requestedIds = attributeIds?
+            .Distinct()
+            .ToArray() ?? Array.Empty<int>();
+
+        if (requestedIds.Length == 0)
+        {
+            return RedirectToAction(nameof(Info));
+        }
+
+        var validIds =
+            await _context.AttributeDefinitions
+                .AsNoTracking()
+                .Where(item =>
+                    requestedIds.Contains(item.Id) &&
+                    !item.IsBuiltIn)
+                .Select(item => item.Id)
+                .ToArrayAsync(cancellationToken);
+
+        var existingIds =
+            await _context.CandidateAttributeValues
+                .AsNoTracking()
+                .Where(item =>
+                    item.CandidateProfileId ==
+                        profileId.Value &&
+                    validIds.Contains(
+                        item.AttributeDefinitionId))
+                .Select(item =>
+                    item.AttributeDefinitionId)
+                .ToArrayAsync(cancellationToken);
+
+        var newValues = validIds
+            .Except(existingIds)
+            .Select(definitionId =>
+                new CandidateAttributeValue
+                {
+                    CandidateProfileId =
+                        profileId.Value,
+                    AttributeDefinitionId =
+                        definitionId
+                });
+
+        _context.CandidateAttributeValues
+            .AddRange(newValues);
+
+        try
+        {
+            await _context.SaveChangesAsync(
+                cancellationToken);
+        }
+        catch (DbUpdateException exception) when (
+            exception.InnerException is
+                SqlException { Number: 2601 or 2627 })
+        {
+            // Another request added the same attributes.
+        }
+
+        return RedirectToAction(nameof(Info));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> RemoveAttributes(
+        int[]? attributeIds,
+        CancellationToken cancellationToken)
+    {
+        var userId = _userManager.GetUserId(User);
+
+        if (userId is null)
+        {
+            return Challenge();
+        }
+
+        var requestedIds = attributeIds?
+            .Distinct()
+            .ToArray() ?? Array.Empty<int>();
+
+        if (requestedIds.Length == 0)
+        {
+            return RedirectToAction(nameof(Info));
+        }
+
+        var profileId =
+            await _context.CandidateProfiles
+                .Where(item => item.UserId == userId)
+                .Select(item => (int?)item.Id)
+                .SingleOrDefaultAsync(cancellationToken);
+
+        if (profileId is null)
+        {
+            return RedirectToAction(nameof(Info));
+        }
+
+        var values =
+            await _context.CandidateAttributeValues
+                .Include(item =>
+                    item.AttributeDefinition)
+                .Where(item =>
+                    item.CandidateProfileId ==
+                        profileId.Value &&
+                    requestedIds.Contains(
+                        item.AttributeDefinitionId) &&
+                    !item.AttributeDefinition.IsBuiltIn)
+                .ToArrayAsync(cancellationToken);
+
+        if (values.Length == 0)
+        {
+            return RedirectToAction(nameof(Info));
+        }
+
+        _context.CandidateAttributeValues
+            .RemoveRange(values);
+
+        try
+        {
+            await _context.SaveChangesAsync(
+                cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            TempData["InfoError"] =
+                "One or more attributes changed in another session. Try again.";
+        }
+
+        return RedirectToAction(nameof(Info));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SaveAttributeValue(
+        [FromBody] SaveAttributeValueRequest? request,
+        CancellationToken cancellationToken)
+    {
+        if (request is null ||
+            request.AttributeDefinitionId <= 0)
+        {
+            return BadRequest(new
+            {
+                message =
+                    "The submitted attribute is invalid."
+            });
+        }
+
+        if (!TryDecodeRowVersion(
+                request.RowVersion,
+                out var originalRowVersion))
+        {
+            return BadRequest(new
+            {
+                message =
+                    "The attribute version is missing or invalid."
+            });
+        }
+
+        var userId = _userManager.GetUserId(User);
+
+        if (userId is null)
+        {
+            return Challenge();
+        }
+
+        var profileId =
+            await _context.CandidateProfiles
+                .Where(item => item.UserId == userId)
+                .Select(item => (int?)item.Id)
+                .SingleOrDefaultAsync(cancellationToken);
+
+        if (profileId is null)
+        {
+            return BadRequest(new
+            {
+                message =
+                    "Complete your profile before adding information."
+            });
+        }
+
+        var value =
+            await _context.CandidateAttributeValues
+                .Include(item =>
+                    item.AttributeDefinition)
+                .SingleOrDefaultAsync(
+                    item =>
+                        item.CandidateProfileId ==
+                            profileId.Value &&
+                        item.AttributeDefinitionId ==
+                            request.AttributeDefinitionId,
+                    cancellationToken);
+
+        if (value is null ||
+            value.AttributeDefinition.IsBuiltIn)
+        {
+            return NotFound(new
+            {
+                message =
+                    "The selected attribute no longer exists."
+            });
+        }
+
+        _context.Entry(value)
+            .Property(item => item.RowVersion)
+            .OriginalValue = originalRowVersion;
+
+        value.TextValue = null;
+        value.NumberValue = null;
+        value.DateValue = null;
+        value.PeriodStart = null;
+        value.PeriodEnd = null;
+        value.BooleanValue = null;
+        value.SelectedOptionId = null;
+
+        switch (value.AttributeDefinition.DataType)
+        {
+            case AttributeDataType.Text:
+            case AttributeDataType.MarkdownText:
+                value.TextValue =
+                    NormalizeText(request.TextValue);
+                break;
+
+            case AttributeDataType.ExternalImage:
+                var imageUrl =
+                    NormalizeText(request.TextValue);
+
+                if (imageUrl is not null &&
+                    !IsHttpUrl(imageUrl))
+                {
+                    return BadRequest(new
+                    {
+                        message =
+                            "Image value must be a valid HTTP or HTTPS URL."
+                    });
+                }
+
+                value.TextValue = imageUrl;
+                break;
+
+            case AttributeDataType.Number:
+                value.NumberValue =
+                    request.NumberValue;
+                break;
+
+            case AttributeDataType.Date:
+                value.DateValue =
+                    request.DateValue;
+                break;
+
+            case AttributeDataType.Period:
+                if (request.PeriodStart.HasValue &&
+                    request.PeriodEnd.HasValue &&
+                    request.PeriodEnd.Value <
+                    request.PeriodStart.Value)
+                {
+                    return BadRequest(new
+                    {
+                        message =
+                            "The period end date cannot be before the start date."
+                    });
+                }
+
+                value.PeriodStart =
+                    request.PeriodStart;
+
+                value.PeriodEnd =
+                    request.PeriodEnd;
+                break;
+
+            case AttributeDataType.Boolean:
+                value.BooleanValue =
+                    request.BooleanValue ?? false;
+                break;
+
+            case AttributeDataType.SingleChoice:
+                if (request.SelectedOptionId.HasValue)
+                {
+                    var optionExists =
+                        await _context.AttributeOptions
+                            .AsNoTracking()
+                            .AnyAsync(
+                                option =>
+                                    option.Id ==
+                                        request.SelectedOptionId.Value &&
+                                    option.AttributeDefinitionId ==
+                                        request.AttributeDefinitionId,
+                                cancellationToken);
+
+                    if (!optionExists)
+                    {
+                        return BadRequest(new
+                        {
+                            message =
+                                "The selected option is invalid."
+                        });
+                    }
+                }
+
+                value.SelectedOptionId =
+                    request.SelectedOptionId;
+                break;
+
+            default:
+                return BadRequest(new
+                {
+                    message =
+                        "The attribute data type is unsupported."
+                });
+        }
+
+        try
+        {
+            await _context.SaveChangesAsync(
+                cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            var currentRowVersion =
+                await _context.CandidateAttributeValues
+                    .AsNoTracking()
+                    .Where(item =>
+                        item.CandidateProfileId ==
+                            profileId.Value &&
+                        item.AttributeDefinitionId ==
+                            request.AttributeDefinitionId)
+                    .Select(item => item.RowVersion)
+                    .SingleOrDefaultAsync(
+                        cancellationToken);
+
+            return Conflict(new
+            {
+                message =
+                    "This value was changed in another session. Reload the page before editing it again.",
+                rowVersion =
+                    currentRowVersion is null
+                        ? string.Empty
+                        : Convert.ToBase64String(
+                            currentRowVersion)
+            });
+        }
+
+        return Json(new
+        {
+            rowVersion =
+                Convert.ToBase64String(
+                    value.RowVersion)
+        });
     }
 
     [HttpGet]
@@ -64,11 +552,12 @@ public sealed class CandidateProfileController : Controller
             return Challenge();
         }
 
-        var profile = await _context.CandidateProfiles
-            .AsNoTracking()
-            .SingleOrDefaultAsync(
-                item => item.UserId == userId,
-                cancellationToken);
+        var profile =
+            await _context.CandidateProfiles
+                .AsNoTracking()
+                .SingleOrDefaultAsync(
+                    item => item.UserId == userId,
+                    cancellationToken);
 
         var model = profile is null
             ? new CandidateProfileEditViewModel()
@@ -77,7 +566,8 @@ public sealed class CandidateProfileController : Controller
                 FirstName = profile.FirstName,
                 LastName = profile.LastName,
                 Location = profile.Location,
-                PersonalPhotoUrl = profile.PersonalPhotoUrl,
+                PersonalPhotoUrl =
+                    profile.PersonalPhotoUrl,
                 RowVersion = profile.RowVersion
             };
 
@@ -90,13 +580,6 @@ public sealed class CandidateProfileController : Controller
         CandidateProfileEditViewModel model,
         CancellationToken cancellationToken)
     {
-        ValidatePhotoUrl(model.PersonalPhotoUrl);
-
-        if (!ModelState.IsValid)
-        {
-            return View(model);
-        }
-
         var userId = _userManager.GetUserId(User);
 
         if (userId is null)
@@ -104,103 +587,348 @@ public sealed class CandidateProfileController : Controller
             return Challenge();
         }
 
-        var profile = await _context.CandidateProfiles
-            .SingleOrDefaultAsync(
-                item => item.UserId == userId,
-                cancellationToken);
+        var profile =
+            await _context.CandidateProfiles
+                .SingleOrDefaultAsync(
+                    item => item.UserId == userId,
+                    cancellationToken);
 
-        if (profile is null)
+        var currentPhotoUrl =
+            profile?.PersonalPhotoUrl ??
+            string.Empty;
+
+        model.PersonalPhotoUrl =
+            currentPhotoUrl;
+
+        ModelState.Remove(
+            nameof(
+                CandidateProfileEditViewModel
+                    .PersonalPhotoUrl));
+
+        var hasNewPhoto =
+            model.PersonalPhotoFile is
+            { Length: > 0 };
+
+        if (string.IsNullOrWhiteSpace(
+                currentPhotoUrl) &&
+            !hasNewPhoto)
         {
-            profile = new CandidateProfile
-            {
-                UserId = userId,
-                FirstName = model.FirstName.Trim(),
-                LastName = model.LastName.Trim(),
-                Location = model.Location.Trim(),
-                PersonalPhotoUrl = model.PersonalPhotoUrl.Trim()
-            };
-
-            _context.CandidateProfiles.Add(profile);
+            ModelState.AddModelError(
+                nameof(
+                    CandidateProfileEditViewModel
+                        .PersonalPhotoFile),
+                "Personal photo is required.");
         }
-        else
+
+        if (profile is not null)
         {
             if (model.RowVersion is null)
             {
                 ModelState.AddModelError(
                     string.Empty,
                     "The profile version is missing. Reload the page and try again.");
+            }
+            else if (!profile.RowVersion.SequenceEqual(
+                         model.RowVersion))
+            {
+                model.RowVersion =
+                    profile.RowVersion;
+
+                model.PersonalPhotoUrl =
+                    profile.PersonalPhotoUrl;
+
+                ModelState.AddModelError(
+                    string.Empty,
+                    "The profile was changed in another session. Review the saved information and try again.");
+            }
+        }
+
+        if (!ModelState.IsValid)
+        {
+            return View(model);
+        }
+
+        var photoUrl =
+            currentPhotoUrl;
+
+        if (hasNewPhoto)
+        {
+            try
+            {
+                var uploadResult =
+                    await _imageService.UploadAsync(
+                        model.PersonalPhotoFile!,
+                        ProfilePhotoFolder);
+
+                photoUrl =
+                    uploadResult.SecureUrl;
+
+                model.PersonalPhotoUrl =
+                    photoUrl;
+            }
+            catch (ArgumentException exception)
+            {
+                ModelState.AddModelError(
+                    nameof(
+                        CandidateProfileEditViewModel
+                            .PersonalPhotoFile),
+                    exception.Message);
 
                 return View(model);
             }
-
-            _context.Entry(profile)
-                .Property(item => item.RowVersion)
-                .OriginalValue = model.RowVersion;
-
-            profile.FirstName = model.FirstName.Trim();
-            profile.LastName = model.LastName.Trim();
-            profile.Location = model.Location.Trim();
-            profile.PersonalPhotoUrl = model.PersonalPhotoUrl.Trim();
-        }
-
-        try
-        {
-            await _context.SaveChangesAsync(cancellationToken);
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            var currentProfile = await _context.CandidateProfiles
-                .AsNoTracking()
-                .SingleOrDefaultAsync(
-                    item => item.UserId == userId,
-                    cancellationToken);
-
-            if (currentProfile is null)
+            catch (Exception exception) when (
+                exception is not OperationCanceledException)
             {
-                model.RowVersion = null;
+                _logger.LogError(
+                    exception,
+                    "Profile photo upload failed for user {UserId}.",
+                    userId);
 
                 ModelState.AddModelError(
-                    string.Empty,
-                    "The profile was deleted in another session. Submit again to recreate it.");
-            }
-            else
-            {
-                model.RowVersion = currentProfile.RowVersion;
+                    nameof(
+                        CandidateProfileEditViewModel
+                            .PersonalPhotoFile),
+                    "The image could not be uploaded. Try again.");
 
-                ModelState.AddModelError(
-                    string.Empty,
-                    "The profile was changed in another session. Review your information and submit again.");
+                return View(model);
             }
+        }
+
+        if (string.IsNullOrWhiteSpace(photoUrl))
+        {
+            ModelState.AddModelError(
+                nameof(
+                    CandidateProfileEditViewModel
+                        .PersonalPhotoFile),
+                "Personal photo is required.");
 
             return View(model);
         }
 
-        TempData["ProfileMessage"] = "Profile saved successfully.";
+        if (profile is null)
+        {
+            profile = new CandidateProfile
+            {
+                UserId = userId,
+                FirstName =
+                    model.FirstName.Trim(),
+                LastName =
+                    model.LastName.Trim(),
+                Location =
+                    model.Location.Trim(),
+                PersonalPhotoUrl =
+                    photoUrl
+            };
+
+            _context.CandidateProfiles.Add(profile);
+        }
+        else
+        {
+            _context.Entry(profile)
+                .Property(item => item.RowVersion)
+                .OriginalValue =
+                    model.RowVersion!;
+
+            profile.FirstName =
+                model.FirstName.Trim();
+
+            profile.LastName =
+                model.LastName.Trim();
+
+            profile.Location =
+                model.Location.Trim();
+
+            profile.PersonalPhotoUrl =
+                photoUrl;
+        }
+
+        try
+        {
+            await _context.SaveChangesAsync(
+                cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            var currentProfile =
+                await _context.CandidateProfiles
+                    .AsNoTracking()
+                    .SingleOrDefaultAsync(
+                        item => item.UserId == userId,
+                        cancellationToken);
+
+            if (currentProfile is null)
+            {
+                model.RowVersion = null;
+                model.PersonalPhotoUrl =
+                    string.Empty;
+
+                ModelState.AddModelError(
+                    string.Empty,
+                    "The profile was deleted in another session. Select the photo again and submit to recreate it.");
+            }
+            else
+            {
+                model.RowVersion =
+                    currentProfile.RowVersion;
+
+                model.PersonalPhotoUrl =
+                    currentProfile.PersonalPhotoUrl;
+
+                ModelState.AddModelError(
+                    string.Empty,
+                    "The profile was changed in another session. Review the saved information and select the new photo again if needed.");
+            }
+
+            ModelState.Remove(
+                nameof(
+                    CandidateProfileEditViewModel
+                        .PersonalPhotoUrl));
+
+            return View(model);
+        }
+        catch (DbUpdateException exception) when (
+            _context.Entry(profile).State ==
+                EntityState.Added &&
+            exception.InnerException is
+                SqlException { Number: 2601 or 2627 })
+        {
+            var currentProfile =
+                await _context.CandidateProfiles
+                    .AsNoTracking()
+                    .SingleOrDefaultAsync(
+                        item => item.UserId == userId,
+                        cancellationToken);
+
+            if (currentProfile is null)
+            {
+                throw;
+            }
+
+            model.RowVersion =
+                currentProfile.RowVersion;
+
+            model.PersonalPhotoUrl =
+                currentProfile.PersonalPhotoUrl;
+
+            ModelState.Remove(
+                nameof(
+                    CandidateProfileEditViewModel
+                        .PersonalPhotoUrl));
+
+            ModelState.AddModelError(
+                string.Empty,
+                "Your profile was created in another session. Your changes were not saved. Review the saved information and try again.");
+
+            return View(model);
+        }
+
+        TempData["ProfileMessage"] =
+            "Profile saved successfully.";
 
         return RedirectToAction(nameof(Index));
     }
 
-    private void ValidatePhotoUrl(string? photoUrl)
+    private static bool IsHttpUrl(
+        string value)
     {
-        if (string.IsNullOrWhiteSpace(photoUrl))
+        return Uri.TryCreate(
+                   value,
+                   UriKind.Absolute,
+                   out var uri) &&
+               (uri.Scheme ==
+                    Uri.UriSchemeHttps ||
+                uri.Scheme ==
+                    Uri.UriSchemeHttp);
+    }
+
+    private static string? NormalizeText(
+        string? value)
+    {
+        return string.IsNullOrWhiteSpace(value)
+            ? null
+            : value.Trim();
+    }
+
+    private static bool TryDecodeRowVersion(
+        string? encodedRowVersion,
+        out byte[] rowVersion)
+    {
+        rowVersion = Array.Empty<byte>();
+
+        if (string.IsNullOrWhiteSpace(
+                encodedRowVersion))
         {
-            return;
+            return false;
         }
 
-        var isValid = Uri.TryCreate(
-            photoUrl,
-            UriKind.Absolute,
-            out var uri);
-
-        var isHttpUrl = isValid &&
-            (uri!.Scheme == Uri.UriSchemeHttps ||
-             uri.Scheme == Uri.UriSchemeHttp);
-
-        if (!isHttpUrl)
+        try
         {
-            ModelState.AddModelError(
-                nameof(CandidateProfileEditViewModel.PersonalPhotoUrl),
-                "Personal photo must use a valid HTTP or HTTPS URL.");
+            rowVersion =
+                Convert.FromBase64String(
+                    encodedRowVersion);
+
+            return rowVersion.Length == 8;
+        }
+        catch (FormatException)
+        {
+            return false;
+        }
+    }
+
+    public sealed class SaveAttributeValueRequest
+    {
+        public int AttributeDefinitionId
+        {
+            get;
+            init;
+        }
+
+        public string RowVersion
+        {
+            get;
+            init;
+        } = string.Empty;
+
+        public string? TextValue
+        {
+            get;
+            init;
+        }
+
+        public decimal? NumberValue
+        {
+            get;
+            init;
+        }
+
+        public DateOnly? DateValue
+        {
+            get;
+            init;
+        }
+
+        public DateOnly? PeriodStart
+        {
+            get;
+            init;
+        }
+
+        public DateOnly? PeriodEnd
+        {
+            get;
+            init;
+        }
+
+        public bool? BooleanValue
+        {
+            get;
+            init;
+        }
+
+        public int? SelectedOptionId
+        {
+            get;
+            init;
         }
     }
 }

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PerfectCareer.Web.Data;
 
@@ -11,9 +12,11 @@ using PerfectCareer.Web.Data;
 namespace PerfectCareer.Web.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260906141532_AddAttributeLibrary")]
+    partial class AddAttributeLibrary
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -263,71 +266,6 @@ namespace PerfectCareer.Web.Data.Migrations
                         .IsUnique();
 
                     b.ToTable("AttributeDefinitions");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            Category = 3,
-                            DataType = 1,
-                            Description = "Candidate's first name.",
-                            IsBuiltIn = true,
-                            Name = "First Name"
-                        },
-                        new
-                        {
-                            Id = 2,
-                            Category = 3,
-                            DataType = 1,
-                            Description = "Candidate's last name.",
-                            IsBuiltIn = true,
-                            Name = "Last Name"
-                        },
-                        new
-                        {
-                            Id = 3,
-                            Category = 3,
-                            DataType = 1,
-                            Description = "Candidate's current location.",
-                            IsBuiltIn = true,
-                            Name = "Location"
-                        },
-                        new
-                        {
-                            Id = 4,
-                            Category = 3,
-                            DataType = 3,
-                            Description = "Candidate's personal photo.",
-                            IsBuiltIn = true,
-                            Name = "Personal Photo"
-                        },
-                        new
-                        {
-                            Id = 5,
-                            Category = 1,
-                            DataType = 4,
-                            Description = "Candidate's IELTS score.",
-                            IsBuiltIn = false,
-                            Name = "IELTS Score"
-                        },
-                        new
-                        {
-                            Id = 6,
-                            Category = 4,
-                            DataType = 8,
-                            Description = "Candidate's presentation skill level.",
-                            IsBuiltIn = false,
-                            Name = "Presentation Skills"
-                        },
-                        new
-                        {
-                            Id = 7,
-                            Category = 3,
-                            DataType = 7,
-                            Description = "Whether the candidate is available for remote work.",
-                            IsBuiltIn = false,
-                            Name = "Remote Work Availability"
-                        });
                 });
 
             modelBuilder.Entity("PerfectCareer.Web.Models.Attributes.AttributeOption", b =>
@@ -358,26 +296,6 @@ namespace PerfectCareer.Web.Data.Migrations
                         .IsUnique();
 
                     b.ToTable("AttributeOptions");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            AttributeDefinitionId = 6,
-                            Label = "Beginner"
-                        },
-                        new
-                        {
-                            Id = 2,
-                            AttributeDefinitionId = 6,
-                            Label = "Intermediate"
-                        },
-                        new
-                        {
-                            Id = 3,
-                            AttributeDefinitionId = 6,
-                            Label = "Advanced"
-                        });
                 });
 
             modelBuilder.Entity("PerfectCareer.Web.Models.Profiles.CandidateAttributeValue", b =>

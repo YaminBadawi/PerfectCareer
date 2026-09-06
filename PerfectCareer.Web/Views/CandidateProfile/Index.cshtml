@@ -31,94 +31,7 @@
             </div>
         }
 
-        <section class="pc-profile-hero">
-            <div class="pc-profile-cover"
-                 aria-hidden="true">
-            </div>
-
-            <div class="pc-profile-summary">
-                <div class="pc-profile-avatar">
-                    @if (hasPhoto)
-                    {
-                        <img src="@Model.PersonalPhotoUrl"
-                             alt="@Model.FullName"
-                             referrerpolicy="no-referrer" />
-                    }
-                    else
-                    {
-                        <span>@Model.Initials</span>
-                    }
-                </div>
-
-                <div class="pc-profile-identity">
-                    <h1>@Model.FullName</h1>
-
-                    <p class="pc-profile-role">
-                        Candidate
-                    </p>
-
-                    @if (Model.HasProfile)
-                    {
-                        <p class="pc-profile-location">
-                            @Model.Location
-                        </p>
-                    }
-                    else
-                    {
-                        <p class="pc-profile-location">
-                            Add your required profile information.
-                        </p>
-                    }
-                </div>
-
-                <div class="pc-profile-completion">
-                    <div class="d-flex justify-content-between gap-3">
-                        <span>Profile completion</span>
-                        <strong>@Model.CompletionPercentage%</strong>
-                    </div>
-
-                    <div class="progress"
-                         role="progressbar"
-                         aria-label="Profile completion"
-                         aria-valuenow="@Model.CompletionPercentage"
-                         aria-valuemin="0"
-                         aria-valuemax="100">
-
-                        <div class="progress-bar"
-                             style="width: @(Model.CompletionPercentage)%">
-                        </div>
-                    </div>
-                </div>
-
-                <a class="btn btn-primary pc-edit-profile"
-                   asp-controller="CandidateProfile"
-                   asp-action="Edit">
-
-                    @(Model.HasProfile
-                        ? "Edit profile"
-                        : "Complete profile")
-                </a>
-            </div>
-        </section>
-
-        <nav class="pc-profile-tabs"
-             aria-label="Profile sections">
-
-            <span class="pc-profile-tab active"
-                  aria-current="page">
-                Overview
-            </span>
-
-            <span class="pc-profile-tab disabled"
-                  aria-disabled="true">
-                Skills &amp; info
-            </span>
-
-            <span class="pc-profile-tab disabled"
-                  aria-disabled="true">
-                Projects
-            </span>
-        </nav>
+        <partial name="_ProfileHeader" model="Model" />
 
         <div class="row g-4">
             <div class="col-lg-8">
@@ -219,6 +132,7 @@
 
             <div class="pc-empty-state">
                 <h3>No additional information yet</h3>
+
                 <p>
                     Skills and reusable profile information will appear
                     here after they are added.

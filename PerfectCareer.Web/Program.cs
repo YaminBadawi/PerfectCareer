@@ -2,10 +2,12 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using PerfectCareer.Web.Authorization;
 using PerfectCareer.Web.Data;
+using PerfectCareer.Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+var connectionString =
+    builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException(
         "Connection string 'DefaultConnection' not found.");
 
@@ -19,6 +21,8 @@ builder.Services.AddDefaultIdentity<IdentityUser>(
     .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>();
 
+builder.Services.AddScoped<CloudinaryImageService>();
+
 builder.Services.AddControllersWithViews();
 
 var app = builder.Build();
@@ -26,12 +30,15 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var roleManager =
-        scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+        scope.ServiceProvider
+            .GetRequiredService<RoleManager<IdentityRole>>();
 
-    if (!await roleManager.RoleExistsAsync(AppRoles.Candidate))
+    if (!await roleManager.RoleExistsAsync(
+            AppRoles.Candidate))
     {
-        var result = await roleManager.CreateAsync(
-            new IdentityRole(AppRoles.Candidate));
+        var result =
+            await roleManager.CreateAsync(
+                new IdentityRole(AppRoles.Candidate));
 
         if (!result.Succeeded)
         {

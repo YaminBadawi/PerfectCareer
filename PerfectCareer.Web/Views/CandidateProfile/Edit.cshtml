@@ -19,7 +19,9 @@
         <div class="pc-edit-heading">
             <div>
                 <p class="pc-card-eyebrow">CANDIDATE PROFILE</p>
+
                 <h1>Edit your profile</h1>
+
                 <p>
                     Complete the required information used throughout
                     your profile and CVs.
@@ -38,7 +40,8 @@
                 <section class="pc-profile-card pc-edit-card">
                     <form asp-controller="CandidateProfile"
                           asp-action="Edit"
-                          method="post">
+                          method="post"
+                          enctype="multipart/form-data">
 
                         <div asp-validation-summary="ModelOnly"
                              class="alert alert-danger"
@@ -51,6 +54,9 @@
                                    name="RowVersion"
                                    value="@Convert.ToBase64String(Model.RowVersion)" />
                         }
+
+                        <input asp-for="PersonalPhotoUrl"
+                               type="hidden" />
 
                         <div class="row g-4">
                             <div class="col-md-6">
@@ -100,25 +106,72 @@
                             </div>
 
                             <div class="col-12">
-                                <label asp-for="PersonalPhotoUrl"
+                                <label asp-for="PersonalPhotoFile"
                                        class="form-label">
                                 </label>
 
-                                <input asp-for="PersonalPhotoUrl"
-                                       type="url"
-                                       class="form-control"
-                                       autocomplete="url"
-                                       placeholder="https://example.com/photo.jpg"
-                                       aria-required="true" />
+                                <div id="pc-photo-drop-zone"
+                                     class="border border-2 rounded-3 bg-light p-4 text-center"
+                                     role="button"
+                                     tabindex="0"
+                                     aria-controls="PersonalPhotoFile">
 
-                                <span asp-validation-for="PersonalPhotoUrl"
+                                    <svg width="42"
+                                         height="42"
+                                         viewBox="0 0 24 24"
+                                         fill="none"
+                                         stroke="currentColor"
+                                         stroke-width="1.5"
+                                         aria-hidden="true"
+                                         class="text-primary mb-3">
+
+                                        <path stroke-linecap="round"
+                                              stroke-linejoin="round"
+                                              d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M5 15.5A4.5 4.5 0 0 0 6.5 24h11a4.5 4.5 0 0 0 1.5-8.5A7 7 0 0 0 5 15.5Z"
+                                              transform="scale(.8) translate(3 0)" />
+                                    </svg>
+
+                                    <p class="mb-1">
+                                        Drop an image here or
+                                        <span class="text-primary fw-semibold text-decoration-underline">
+                                            browse
+                                        </span>
+                                    </p>
+
+                                    <p class="small text-muted mb-0">
+                                        JPG, PNG or WEBP. Maximum size 5 MB.
+                                    </p>
+
+                                    <input asp-for="PersonalPhotoFile"
+                                           type="file"
+                                           class="visually-hidden"
+                                           accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" />
+                                </div>
+
+                                <p id="pc-photo-file-name"
+                                   class="small text-muted mt-2 mb-0">
+                                    @if (hasCurrentPhoto)
+                                    {
+                                        <text>
+                                            Keep the current photo or select a new one.
+                                        </text>
+                                    }
+                                    else
+                                    {
+                                        <text>
+                                            No image selected.
+                                        </text>
+                                    }
+                                </p>
+
+                                <p id="pc-photo-client-error"
+                                   class="small text-danger mt-2 mb-0 d-none"
+                                   role="alert">
+                                </p>
+
+                                <span asp-validation-for="PersonalPhotoFile"
                                       class="text-danger">
                                 </span>
-
-                                <p class="pc-field-help">
-                                    Enter an HTTP or HTTPS link to an image
-                                    stored on an external cloud service.
-                                </p>
                             </div>
                         </div>
 
@@ -141,24 +194,28 @@
             <div class="col-lg-4">
                 <aside class="pc-profile-card pc-photo-card">
                     <p class="pc-card-eyebrow">PREVIEW</p>
+
                     <h2>Personal photo</h2>
 
                     <div class="pc-edit-photo-preview">
-                        @if (hasCurrentPhoto)
-                        {
-                            <img src="@Model.PersonalPhotoUrl"
-                                 alt="Current personal photo"
-                                 referrerpolicy="no-referrer" />
-                        }
-                        else
-                        {
-                            <span aria-hidden="true">Photo</span>
-                        }
+                        <img id="pc-photo-preview-image"
+                             src="@(hasCurrentPhoto
+                                                         ? Model.PersonalPhotoUrl
+                                                         : "data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=")"
+                             alt="Personal photo preview"
+                             referrerpolicy="no-referrer"
+                             class="@(hasCurrentPhoto ? null : "d-none")" />
+
+                        <span id="pc-photo-preview-placeholder"
+                              class="@(hasCurrentPhoto ? "d-none" : null)"
+                              aria-hidden="true">
+                            Photo
+                        </span>
                     </div>
 
                     <p>
-                        Your database stores only the external image URL,
-                        not the image file itself.
+                        The image will be uploaded to external cloud
+                        storage. The database will store only its URL.
                     </p>
                 </aside>
             </div>
@@ -168,4 +225,202 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        (() => {
+            const fileInput =
+                document.getElementById("PersonalPhotoFile");
+
+            const dropZone =
+                document.getElementById("pc-photo-drop-zone");
+
+            const previewImage =
+                document.getElementById("pc-photo-preview-image");
+
+            const previewPlaceholder =
+                document.getElementById("pc-photo-preview-placeholder");
+
+            const fileName =
+                document.getElementById("pc-photo-file-name");
+
+            const clientError =
+                document.getElementById("pc-photo-client-error");
+
+            if (!fileInput ||
+                !dropZone ||
+                !previewImage ||
+                !previewPlaceholder ||
+                !fileName ||
+                !clientError) {
+                return;
+            }
+
+            const maximumFileSize =
+                5 * 1024 * 1024;
+
+            const allowedTypes =
+                new Set([
+                    "image/jpeg",
+                    "image/png",
+                    "image/webp"
+                ]);
+
+            const allowedExtensions =
+                new Set([
+                    "jpg",
+                    "jpeg",
+                    "png",
+                    "webp"
+                ]);
+
+            let previewObjectUrl = null;
+
+            function showError(message) {
+                clientError.textContent = message;
+                clientError.classList.remove("d-none");
+            }
+
+            function clearError() {
+                clientError.textContent = "";
+                clientError.classList.add("d-none");
+            }
+
+            function validateFile(file) {
+                if (!file) {
+                    return "Select an image to upload.";
+                }
+
+                if (file.size > maximumFileSize) {
+                    return "The image must not exceed 5 MB.";
+                }
+
+                const extension =
+                    file.name
+                        .split(".")
+                        .pop()
+                        ?.toLowerCase();
+
+                if (!allowedTypes.has(file.type) ||
+                    !extension ||
+                    !allowedExtensions.has(extension)) {
+                    return "Only JPG, PNG, and WEBP images are allowed.";
+                }
+
+                return null;
+            }
+
+            function displayFile(file) {
+                const validationError =
+                    validateFile(file);
+
+                if (validationError) {
+                    fileInput.value = "";
+                    showError(validationError);
+                    return;
+                }
+
+                clearError();
+
+                if (previewObjectUrl) {
+                    URL.revokeObjectURL(previewObjectUrl);
+                }
+
+                previewObjectUrl =
+                    URL.createObjectURL(file);
+
+                previewImage.src =
+                    previewObjectUrl;
+
+                previewImage.classList.remove("d-none");
+                previewPlaceholder.classList.add("d-none");
+
+                fileName.textContent =
+                    file.name;
+            }
+
+            fileInput.addEventListener(
+                "change",
+                () => {
+                    displayFile(fileInput.files[0]);
+                });
+
+            dropZone.addEventListener(
+                "click",
+                () => {
+                    fileInput.click();
+                });
+
+            dropZone.addEventListener(
+                "keydown",
+                event => {
+                    if (event.key === "Enter" ||
+                        event.key === " ") {
+                        event.preventDefault();
+                        fileInput.click();
+                    }
+                });
+
+            ["dragenter", "dragover"].forEach(
+                eventName => {
+                    dropZone.addEventListener(
+                        eventName,
+                        event => {
+                            event.preventDefault();
+                            dropZone.classList.add(
+                                "border-primary");
+                        });
+                });
+
+            ["dragleave", "dragend"].forEach(
+                eventName => {
+                    dropZone.addEventListener(
+                        eventName,
+                        () => {
+                            dropZone.classList.remove(
+                                "border-primary");
+                        });
+                });
+
+            dropZone.addEventListener(
+                "drop",
+                event => {
+                    event.preventDefault();
+
+                    dropZone.classList.remove(
+                        "border-primary");
+
+                    const file =
+                        event.dataTransfer.files[0];
+
+                    if (!file) {
+                        return;
+                    }
+
+                    const validationError =
+                        validateFile(file);
+
+                    if (validationError) {
+                        showError(validationError);
+                        return;
+                    }
+
+                    const transfer =
+                        new DataTransfer();
+
+                    transfer.items.add(file);
+                    fileInput.files = transfer.files;
+
+                    displayFile(file);
+                });
+
+            window.addEventListener(
+                "beforeunload",
+                () => {
+                    if (previewObjectUrl) {
+                        URL.revokeObjectURL(
+                            previewObjectUrl);
+                    }
+                });
+        })();
+    </script>
 }

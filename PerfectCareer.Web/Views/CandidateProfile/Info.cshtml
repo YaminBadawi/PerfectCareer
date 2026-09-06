@@ -1,0 +1,808 @@
+@using System.Globalization
+@using PerfectCareer.Web.Models.Attributes
+@model PerfectCareer.Web.ViewModels.Profiles.CandidateProfileDetailsViewModel
+
+@{
+    ViewData["Title"] = "Skills & Info";
+
+    var selectedAttributes = Model.Attributes
+        .Where(item => item.IsSelected && !item.IsBuiltIn)
+        .ToArray();
+
+    var availableAttributes = Model.Attributes
+        .Where(item => !item.IsSelected && !item.IsBuiltIn)
+        .ToArray();
+
+    var categories = Enum.GetValues<AttributeCategory>();
+    var infoError = TempData["InfoError"] as string;
+
+    string GetCategoryLabel(AttributeCategory category) =>
+        category switch
+        {
+            AttributeCategory.Certification => "Certification",
+            AttributeCategory.DomainKnowledge => "Domain Knowledge",
+            AttributeCategory.PersonalInformation => "Personal Information",
+            AttributeCategory.SoftSkills => "Soft Skills",
+            _ => category.ToString()
+        };
+
+    string GetDataTypeLabel(AttributeDataType dataType) =>
+        dataType switch
+        {
+            AttributeDataType.Text => "String",
+            AttributeDataType.MarkdownText => "Text",
+            AttributeDataType.ExternalImage => "Image",
+            AttributeDataType.Number => "Numeric",
+            AttributeDataType.Date => "Date",
+            AttributeDataType.Period => "Period",
+            AttributeDataType.Boolean => "Boolean",
+            AttributeDataType.SingleChoice => "Choice",
+            _ => dataType.ToString()
+        };
+}
+
+@section Styles {
+    <link rel="stylesheet"
+          href="~/css/Pages_/profile.css"
+          asp-append-version="true" />
+}
+
+<div class="pc-profile-page">
+    <div class="container-xl pc-profile-shell">
+        <partial name="_ProfileHeader" model="Model" />
+
+        <section id="pc-info-editor"
+                 aria-labelledby="pc-info-selected-title">
+
+            @if (!string.IsNullOrWhiteSpace(infoError))
+            {
+                <div id="pc-info-error"
+                     class="alert alert-danger"
+                     role="alert">
+                    @infoError
+                </div>
+            }
+            else
+            {
+                <div id="pc-info-error"
+                     class="alert alert-danger"
+                     role="alert"
+                     hidden>
+                </div>
+            }
+
+            <div class="row g-3">
+                <div class="col-lg-8">
+                    <section class="pc-profile-card"
+                             aria-labelledby="pc-info-selected-title">
+
+                        <form asp-action="RemoveAttributes"
+                              method="post"
+                              id="pc-info-remove-form">
+
+                            @Html.AntiForgeryToken()
+
+                            <div class="pc-card-heading d-flex justify-content-between align-items-start gap-3">
+                                <div>
+                                    <p class="pc-card-eyebrow">
+                                        SKILLS &amp; INFO
+                                    </p>
+
+                                    <h2 id="pc-info-selected-title">
+                                        Your attributes
+                                    </h2>
+
+                                    <p class="small text-muted mt-2 mb-0">
+                                        Choose attributes from the library and fill in your details.
+                                    </p>
+                                </div>
+
+                                <div class="d-flex flex-column align-items-end gap-2">
+                                    <p id="pc-info-save-status"
+                                       class="small text-success mb-0"
+                                       role="status"
+                                       aria-live="polite"
+                                       aria-atomic="true">
+                                        All changes saved
+                                    </p>
+
+                                    <button id="pc-info-remove-selected"
+                                            type="submit"
+                                            class="btn btn-outline-primary"
+                                            disabled>
+                                        Remove selected
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div id="pc-info-values">
+                                @if (selectedAttributes.Length == 0)
+                                {
+                                    <div class="pc-empty-state my-3">
+                                        <h3>No attributes selected</h3>
+
+                                        <p>
+                                            Select attributes from the library to add them.
+                                        </p>
+                                    </div>
+                                }
+                                else
+                                {
+                                    foreach (var definition in selectedAttributes)
+                                    {
+                                        <article class="border-bottom py-3"
+                                                 data-selected-attribute="@definition.Id">
+
+                                            <div class="row align-items-center g-3">
+                                                <div class="col-md-5">
+                                                    <div class="d-flex align-items-center gap-3">
+                                                        <input type="checkbox"
+                                                               name="attributeIds"
+                                                               class="form-check-input flex-shrink-0 pc-remove-choice"
+                                                               value="@definition.Id"
+                                                               aria-label="Select @definition.Name for removal" />
+
+                                                        <div>
+                                                            <span class="small text-primary">
+                                                                @GetCategoryLabel(definition.Category)
+                                                            </span>
+
+                                                            <h3 class="h6 fw-bold mb-0">
+                                                                @definition.Name
+                                                            </h3>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div class="col-md-7">
+                                                    @switch (definition.DataType)
+                                                    {
+                                                        case AttributeDataType.Text:
+                                                            <input type="text"
+                                                                   class="form-control pc-attribute-value"
+                                                                   value="@definition.TextValue"
+                                                                   data-definition-id="@definition.Id"
+                                                                   data-data-type="@((int)definition.DataType)"
+                                                                   data-row-version="@definition.ValueRowVersion" />
+                                                            break;
+
+                                                        case AttributeDataType.MarkdownText:
+                                                            <textarea class="form-control pc-attribute-value"
+                                                                      rows="3"
+                                                                      data-definition-id="@definition.Id"
+                                                                      data-data-type="@((int)definition.DataType)"
+                                                                      data-row-version="@definition.ValueRowVersion">@definition.TextValue</textarea>
+
+                                                            <span class="small text-muted">
+                                                                Markdown supported
+                                                            </span>
+                                                            break;
+
+                                                        case AttributeDataType.ExternalImage:
+                                                            <div class="border rounded-3 p-3">
+                                                                <label class="small fw-semibold mb-2"
+                                                                       for="attribute-@definition.Id">
+                                                                    External image URL
+                                                                </label>
+
+                                                                <input id="attribute-@definition.Id"
+                                                                       type="url"
+                                                                       class="form-control pc-attribute-value"
+                                                                       value="@definition.TextValue"
+                                                                       placeholder="https://..."
+                                                                       data-definition-id="@definition.Id"
+                                                                       data-data-type="@((int)definition.DataType)"
+                                                                       data-row-version="@definition.ValueRowVersion" />
+
+                                                                <span class="small text-muted">
+                                                                    The image file is not stored on this server.
+                                                                </span>
+                                                            </div>
+                                                            break;
+
+                                                        case AttributeDataType.Number:
+                                                            <input type="number"
+                                                                   step="any"
+                                                                   class="form-control pc-attribute-value"
+                                                                   value="@(definition.NumberValue?.ToString(CultureInfo.InvariantCulture))"
+                                                                   data-definition-id="@definition.Id"
+                                                                   data-data-type="@((int)definition.DataType)"
+                                                                   data-row-version="@definition.ValueRowVersion" />
+                                                            break;
+
+                                                        case AttributeDataType.Date:
+                                                            <input type="date"
+                                                                   class="form-control pc-attribute-value"
+                                                                   value="@(definition.DateValue?.ToString("yyyy-MM-dd"))"
+                                                                   data-definition-id="@definition.Id"
+                                                                   data-data-type="@((int)definition.DataType)"
+                                                                   data-row-version="@definition.ValueRowVersion" />
+                                                            break;
+
+                                                        case AttributeDataType.Period:
+                                                            <div class="row g-2">
+                                                                <div class="col-sm-6">
+                                                                    <input type="date"
+                                                                           class="form-control pc-attribute-value"
+                                                                           value="@(definition.PeriodStart?.ToString("yyyy-MM-dd"))"
+                                                                           aria-label="@definition.Name start date"
+                                                                           data-period-part="start"
+                                                                           data-definition-id="@definition.Id"
+                                                                           data-data-type="@((int)definition.DataType)"
+                                                                           data-row-version="@definition.ValueRowVersion" />
+                                                                </div>
+
+                                                                <div class="col-sm-6">
+                                                                    <input type="date"
+                                                                           class="form-control pc-attribute-value"
+                                                                           value="@(definition.PeriodEnd?.ToString("yyyy-MM-dd"))"
+                                                                           aria-label="@definition.Name end date"
+                                                                           data-period-part="end"
+                                                                           data-definition-id="@definition.Id"
+                                                                           data-data-type="@((int)definition.DataType)"
+                                                                           data-row-version="@definition.ValueRowVersion" />
+                                                                </div>
+                                                            </div>
+                                                            break;
+
+                                                        case AttributeDataType.Boolean:
+                                                            <div class="form-check">
+                                                                <input id="attribute-@definition.Id"
+                                                                       type="checkbox"
+                                                                       class="form-check-input pc-attribute-value"
+                                                                       checked="@definition.BooleanValue"
+                                                                       data-definition-id="@definition.Id"
+                                                                       data-data-type="@((int)definition.DataType)"
+                                                                       data-row-version="@definition.ValueRowVersion" />
+
+                                                                <label class="form-check-label"
+                                                                       for="attribute-@definition.Id">
+                                                                    Available
+                                                                </label>
+                                                            </div>
+                                                            break;
+
+                                                        case AttributeDataType.SingleChoice:
+                                                            <select class="form-select pc-attribute-value"
+                                                                    data-definition-id="@definition.Id"
+                                                                    data-data-type="@((int)definition.DataType)"
+                                                                    data-row-version="@definition.ValueRowVersion">
+
+                                                                <option value="">Select an option</option>
+
+                                                                @foreach (var option in definition.Options)
+                                                                {
+                                                                    if (option.Id == definition.SelectedOptionId)
+                                                                    {
+                                                                        <option value="@option.Id" selected>
+                                                                            @option.Label
+                                                                        </option>
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        <option value="@option.Id">
+                                                                            @option.Label
+                                                                        </option>
+                                                                    }
+                                                                }
+                                                            </select>
+                                                            break;
+                                                    }
+                                                </div>
+                                            </div>
+                                        </article>
+                                    }
+                                }
+                            </div>
+
+                            <p class="small text-muted border-top pt-3 mt-3 mb-0">
+                                Changes are saved automatically every 5 seconds.
+                            </p>
+                        </form>
+                    </section>
+                </div>
+
+                <div class="col-lg-4">
+                    <aside class="pc-profile-card"
+                           aria-labelledby="pc-info-library-title">
+
+                        <form asp-action="AddAttributes"
+                              method="post"
+                              id="pc-info-add-form">
+
+                            @Html.AntiForgeryToken()
+
+                            <div class="d-flex justify-content-between align-items-center gap-3 mb-3">
+                                <h2 id="pc-info-library-title"
+                                    class="h4 fw-bold mb-0">
+                                    Attribute Library
+                                </h2>
+
+                                <button id="pc-info-add-selected"
+                                        type="submit"
+                                        class="btn btn-primary"
+                                        disabled>
+                                    Add selected
+                                </button>
+                            </div>
+
+                            <p class="small text-muted">
+                                Select existing attributes to add to your profile.
+                            </p>
+
+                            <div class="mb-2">
+                                <label for="pc-info-search"
+                                       class="visually-hidden">
+                                    Search attributes by name prefix
+                                </label>
+
+                                <input id="pc-info-search"
+                                       type="search"
+                                       class="form-control"
+                                       placeholder="Search by name prefix..."
+                                       autocomplete="off" />
+                            </div>
+
+                            <div class="mb-2">
+                                <label for="pc-info-category"
+                                       class="visually-hidden">
+                                    Attribute category
+                                </label>
+
+                                <select id="pc-info-category"
+                                        class="form-select">
+                                    <option value="">All categories</option>
+
+                                    @foreach (var category in categories)
+                                    {
+                                        <option value="@((int)category)">
+                                            @GetCategoryLabel(category)
+                                        </option>
+                                    }
+                                </select>
+                            </div>
+
+                            <div class="nav nav-tabs mb-2"
+                                 role="group"
+                                 aria-label="Attribute library filter">
+
+                                <button type="button"
+                                        class="nav-link active"
+                                        aria-pressed="true">
+                                    All attributes
+                                </button>
+
+                                <button type="button"
+                                        class="nav-link"
+                                        aria-pressed="false"
+                                        disabled>
+                                    Recently used
+                                </button>
+                            </div>
+
+                            <div id="pc-info-library-results">
+                                @if (availableAttributes.Length == 0)
+                                {
+                                    <p class="small text-muted py-4 mb-0">
+                                        No available attributes.
+                                    </p>
+                                }
+                                else
+                                {
+                                    foreach (var definition in availableAttributes)
+                                    {
+                                        <label class="d-flex align-items-start gap-3 border-bottom py-3"
+                                               data-library-item
+                                               data-name="@definition.Name.ToLowerInvariant()"
+                                               data-category="@((int)definition.Category)">
+
+                                            <input type="checkbox"
+                                                   name="attributeIds"
+                                                   class="form-check-input mt-1 pc-library-choice"
+                                                   value="@definition.Id" />
+
+                                            <span class="flex-grow-1">
+                                                <span class="d-flex justify-content-between gap-2">
+                                                    <strong>
+                                                        @definition.Name
+                                                    </strong>
+
+                                                    <span class="badge bg-light text-primary">
+                                                        @GetDataTypeLabel(definition.DataType)
+                                                    </span>
+                                                </span>
+
+                                                <span class="small text-muted d-block">
+                                                    @GetCategoryLabel(definition.Category)
+                                                </span>
+
+                                                <span class="small text-muted d-block">
+                                                    @definition.Description
+                                                </span>
+                                            </span>
+                                        </label>
+                                    }
+                                }
+
+                                <p id="pc-info-no-results"
+                                   class="small text-muted py-4 mb-0"
+                                   hidden>
+                                    No attributes found.
+                                </p>
+                            </div>
+
+                            <p class="small text-muted border-top pt-3 mt-3 mb-0">
+                                Select attributes, then choose Add selected.
+                            </p>
+                        </form>
+                    </aside>
+                </div>
+            </div>
+        </section>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (() => {
+            const saveUrl =
+                '@Url.Action("SaveAttributeValue", "CandidateProfile")';
+
+            const token = document.querySelector(
+                '#pc-info-add-form input[name="__RequestVerificationToken"]'
+            )?.value;
+
+            const status = document.getElementById(
+                "pc-info-save-status"
+            );
+
+            const errorBox = document.getElementById(
+                "pc-info-error"
+            );
+
+            const valueInputs = Array.from(
+                document.querySelectorAll(".pc-attribute-value")
+            );
+
+            const dirtyIds = new Set();
+            let isSaving = false;
+
+            const setStatus = (message, cssClass) => {
+                status.textContent = message;
+                status.className = `small mb-0 ${cssClass}`;
+            };
+
+            const showError = message => {
+                errorBox.textContent = message;
+                errorBox.hidden = false;
+            };
+
+            const hideError = () => {
+                errorBox.textContent = "";
+                errorBox.hidden = true;
+            };
+
+            const controlsFor = definitionId =>
+                valueInputs.filter(
+                    input =>
+                        input.dataset.definitionId ===
+                        definitionId
+                );
+
+            const createPayload = definitionId => {
+                const controls = controlsFor(definitionId);
+                const firstControl = controls[0];
+                const dataType = Number(
+                    firstControl.dataset.dataType
+                );
+
+                const payload = {
+                    attributeDefinitionId:
+                        Number(definitionId),
+                    rowVersion:
+                        firstControl.dataset.rowVersion
+                };
+
+                switch (dataType) {
+                    case 1:
+                    case 2:
+                    case 3:
+                        payload.textValue =
+                            firstControl.value || null;
+                        break;
+
+                    case 4:
+                        payload.numberValue =
+                            firstControl.value === ""
+                                ? null
+                                : Number(firstControl.value);
+                        break;
+
+                    case 5:
+                        payload.dateValue =
+                            firstControl.value || null;
+                        break;
+
+                    case 6: {
+                        const start = controls.find(
+                            input =>
+                                input.dataset.periodPart ===
+                                "start"
+                        );
+
+                        const end = controls.find(
+                            input =>
+                                input.dataset.periodPart ===
+                                "end"
+                        );
+
+                        payload.periodStart =
+                            start?.value || null;
+
+                        payload.periodEnd =
+                            end?.value || null;
+                        break;
+                    }
+
+                    case 7:
+                        payload.booleanValue =
+                            firstControl.checked;
+                        break;
+
+                    case 8:
+                        payload.selectedOptionId =
+                            firstControl.value === ""
+                                ? null
+                                : Number(firstControl.value);
+                        break;
+                }
+
+                return payload;
+            };
+
+            const saveDefinition = async definitionId => {
+                const response = await fetch(saveUrl, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "RequestVerificationToken": token
+                    },
+                    body: JSON.stringify(
+                        createPayload(definitionId)
+                    )
+                });
+
+                let result = {};
+
+                try {
+                    result = await response.json();
+                } catch {
+                    result = {};
+                }
+
+                if (!response.ok) {
+                    const error = new Error(
+                        result.message ||
+                        "The value could not be saved."
+                    );
+
+                    error.isConflict =
+                        response.status === 409;
+
+                    throw error;
+                }
+
+                controlsFor(definitionId).forEach(
+                    input => {
+                        input.dataset.rowVersion =
+                            result.rowVersion;
+                    }
+                );
+            };
+
+            const saveChanges = async () => {
+                if (isSaving || dirtyIds.size === 0) {
+                    return;
+                }
+
+                isSaving = true;
+                hideError();
+                setStatus("Saving...", "text-muted");
+
+                const idsToSave =
+                    Array.from(dirtyIds);
+
+                let failed = false;
+
+                for (const definitionId of idsToSave) {
+                    dirtyIds.delete(definitionId);
+
+                    try {
+                        await saveDefinition(definitionId);
+                    } catch (error) {
+                        failed = true;
+                        showError(error.message);
+
+                        if (!error.isConflict) {
+                            dirtyIds.add(definitionId);
+                        } else {
+                            setStatus(
+                                "Conflict detected — reload the page",
+                                "text-danger"
+                            );
+                        }
+                    }
+                }
+
+                isSaving = false;
+
+                if (!failed) {
+                    if (dirtyIds.size === 0) {
+                        setStatus(
+                            "All changes saved",
+                            "text-success"
+                        );
+                    } else {
+                        setStatus(
+                            "Unsaved changes",
+                            "text-warning"
+                        );
+                    }
+                }
+            };
+
+            valueInputs.forEach(input => {
+                const markAsChanged = () => {
+                    dirtyIds.add(
+                        input.dataset.definitionId
+                    );
+
+                    hideError();
+
+                    setStatus(
+                        "Unsaved changes",
+                        "text-warning"
+                    );
+                };
+
+                input.addEventListener(
+                    "input",
+                    markAsChanged
+                );
+
+                input.addEventListener(
+                    "change",
+                    markAsChanged
+                );
+            });
+
+            window.setInterval(saveChanges, 5000);
+
+            const search = document.getElementById(
+                "pc-info-search"
+            );
+
+            const category = document.getElementById(
+                "pc-info-category"
+            );
+
+            const addButton = document.getElementById(
+                "pc-info-add-selected"
+            );
+
+            const choices = Array.from(
+                document.querySelectorAll(
+                    ".pc-library-choice"
+                )
+            );
+
+            const libraryItems = Array.from(
+                document.querySelectorAll(
+                    "[data-library-item]"
+                )
+            );
+
+            const noResults = document.getElementById(
+                "pc-info-no-results"
+            );
+
+            const removeButton = document.getElementById(
+                "pc-info-remove-selected"
+            );
+
+            const removeChoices = Array.from(
+                document.querySelectorAll(
+                    ".pc-remove-choice"
+                )
+            );
+
+            const updateAddButton = () => {
+                addButton.disabled =
+                    !choices.some(
+                        choice => choice.checked
+                    );
+            };
+
+            const updateRemoveButton = () => {
+                removeButton.disabled =
+                    !removeChoices.some(
+                        choice => choice.checked
+                    );
+
+                removeChoices.forEach(choice => {
+                    const row = choice.closest(
+                        "[data-selected-attribute]"
+                    );
+
+                    row?.classList.toggle(
+                        "bg-light",
+                        choice.checked
+                    );
+                });
+            };
+
+            const filterLibrary = () => {
+                const prefix =
+                    search.value.trim().toLowerCase();
+
+                const selectedCategory =
+                    category.value;
+
+                let visibleCount = 0;
+
+                libraryItems.forEach(item => {
+                    const matchesName =
+                        item.dataset.name.startsWith(
+                            prefix
+                        );
+
+                    const matchesCategory =
+                        selectedCategory === "" ||
+                        item.dataset.category ===
+                        selectedCategory;
+
+                    const isVisible =
+                        matchesName &&
+                        matchesCategory;
+
+                    item.hidden = !isVisible;
+
+                    if (isVisible) {
+                        visibleCount++;
+                    }
+                });
+
+                noResults.hidden =
+                    visibleCount !== 0 ||
+                    libraryItems.length === 0;
+            };
+
+            choices.forEach(choice => {
+                choice.addEventListener(
+                    "change",
+                    updateAddButton
+                );
+            });
+
+            removeChoices.forEach(choice => {
+                choice.addEventListener(
+                    "change",
+                    updateRemoveButton
+                );
+            });
+
+            search.addEventListener(
+                "input",
+                filterLibrary
+            );
+
+            category.addEventListener(
+                "change",
+                filterLibrary
+            );
+
+            updateAddButton();
+            updateRemoveButton();
+        })();
+    </script>
+}
