@@ -27,6 +27,9 @@ public class CandidateProfile
     [StringLength(2048)]
     public string PersonalPhotoUrl { get; set; } = string.Empty;
 
+    [StringLength(255)]
+    public string? PersonalPhotoPublicId { get; set; }
+
     [Timestamp]
     public byte[] RowVersion { get; set; } = Array.Empty<byte>();
 

@@ -37,19 +37,19 @@ public sealed class CandidateProfileController : Controller
 
     [HttpGet]
     public Task<IActionResult> Index(
-        CancellationToken cancellationToken)
-        => RenderProfileAsync(
+        CancellationToken cancellationToken) =>
+        RenderProfileAsync(
             nameof(Index),
-            loadAttributes: false,
-            cancellationToken: cancellationToken);
+            false,
+            cancellationToken);
 
     [HttpGet]
     public Task<IActionResult> Info(
-        CancellationToken cancellationToken)
-        => RenderProfileAsync(
+        CancellationToken cancellationToken) =>
+        RenderProfileAsync(
             nameof(Info),
-            loadAttributes: true,
-            cancellationToken: cancellationToken);
+            true,
+            cancellationToken);
 
     private async Task<IActionResult> RenderProfileAsync(
         string viewName,
@@ -141,11 +141,13 @@ public sealed class CandidateProfileController : Controller
                         BooleanValue = value?.BooleanValue,
                         SelectedOptionId =
                             value?.SelectedOptionId,
-                        ValueRowVersion = value is null
-                            ? string.Empty
-                            : Convert.ToBase64String(
-                                value.RowVersion),
-                        Options = options ??
+                        ValueRowVersion =
+                            value is null
+                                ? string.Empty
+                                : Convert.ToBase64String(
+                                    value.RowVersion),
+                        Options =
+                            options ??
                             Array.Empty<AttributeOptionItemViewModel>()
                     };
                 })
@@ -197,9 +199,11 @@ public sealed class CandidateProfileController : Controller
             return RedirectToAction(nameof(Edit));
         }
 
-        var requestedIds = attributeIds?
-            .Distinct()
-            .ToArray() ?? Array.Empty<int>();
+        var requestedIds =
+            attributeIds?
+                .Distinct()
+                .ToArray() ??
+            Array.Empty<int>();
 
         if (requestedIds.Length == 0)
         {
@@ -227,16 +231,17 @@ public sealed class CandidateProfileController : Controller
                     item.AttributeDefinitionId)
                 .ToArrayAsync(cancellationToken);
 
-        var newValues = validIds
-            .Except(existingIds)
-            .Select(definitionId =>
-                new CandidateAttributeValue
-                {
-                    CandidateProfileId =
-                        profileId.Value,
-                    AttributeDefinitionId =
-                        definitionId
-                });
+        var newValues =
+            validIds
+                .Except(existingIds)
+                .Select(definitionId =>
+                    new CandidateAttributeValue
+                    {
+                        CandidateProfileId =
+                            profileId.Value,
+                        AttributeDefinitionId =
+                            definitionId
+                    });
 
         _context.CandidateAttributeValues
             .AddRange(newValues);
@@ -269,9 +274,11 @@ public sealed class CandidateProfileController : Controller
             return Challenge();
         }
 
-        var requestedIds = attributeIds?
-            .Distinct()
-            .ToArray() ?? Array.Empty<int>();
+        var requestedIds =
+            attributeIds?
+                .Distinct()
+                .ToArray() ??
+            Array.Empty<int>();
 
         if (requestedIds.Length == 0)
         {
@@ -415,21 +422,23 @@ public sealed class CandidateProfileController : Controller
                 break;
 
             case AttributeDataType.ExternalImage:
-                var imageUrl =
-                    NormalizeText(request.TextValue);
-
-                if (imageUrl is not null &&
-                    !IsHttpUrl(imageUrl))
                 {
-                    return BadRequest(new
-                    {
-                        message =
-                            "Image value must be a valid HTTP or HTTPS URL."
-                    });
-                }
+                    var imageUrl =
+                        NormalizeText(request.TextValue);
 
-                value.TextValue = imageUrl;
-                break;
+                    if (imageUrl is not null &&
+                        !IsHttpUrl(imageUrl))
+                    {
+                        return BadRequest(new
+                        {
+                            message =
+                                "Image value must be a valid HTTP or HTTPS URL."
+                        });
+                    }
+
+                    value.TextValue = imageUrl;
+                    break;
+                }
 
             case AttributeDataType.Number:
                 value.NumberValue =
@@ -559,17 +568,19 @@ public sealed class CandidateProfileController : Controller
                     item => item.UserId == userId,
                     cancellationToken);
 
-        var model = profile is null
-            ? new CandidateProfileEditViewModel()
-            : new CandidateProfileEditViewModel
-            {
-                FirstName = profile.FirstName,
-                LastName = profile.LastName,
-                Location = profile.Location,
-                PersonalPhotoUrl =
-                    profile.PersonalPhotoUrl,
-                RowVersion = profile.RowVersion
-            };
+        var model =
+            profile is null
+                ? new CandidateProfileEditViewModel()
+                : new CandidateProfileEditViewModel
+                {
+                    FirstName = profile.FirstName,
+                    LastName = profile.LastName,
+                    Location = profile.Location,
+                    PersonalPhotoUrl =
+                        profile.PersonalPhotoUrl,
+                    RowVersion =
+                        profile.RowVersion
+                };
 
         return View(model);
     }
@@ -596,6 +607,9 @@ public sealed class CandidateProfileController : Controller
         var currentPhotoUrl =
             profile?.PersonalPhotoUrl ??
             string.Empty;
+
+        var currentPhotoPublicId =
+            profile?.PersonalPhotoPublicId;
 
         model.PersonalPhotoUrl =
             currentPhotoUrl;
@@ -648,23 +662,20 @@ public sealed class CandidateProfileController : Controller
             return View(model);
         }
 
-        var photoUrl =
-            currentPhotoUrl;
+        CloudinaryImageResult? uploadedPhoto =
+            null;
 
         if (hasNewPhoto)
         {
             try
             {
-                var uploadResult =
+                uploadedPhoto =
                     await _imageService.UploadAsync(
                         model.PersonalPhotoFile!,
                         ProfilePhotoFolder);
 
-                photoUrl =
-                    uploadResult.SecureUrl;
-
                 model.PersonalPhotoUrl =
-                    photoUrl;
+                    uploadedPhoto.SecureUrl;
             }
             catch (ArgumentException exception)
             {
@@ -677,7 +688,8 @@ public sealed class CandidateProfileController : Controller
                 return View(model);
             }
             catch (Exception exception) when (
-                exception is not OperationCanceledException)
+                exception is not
+                    OperationCanceledException)
             {
                 _logger.LogError(
                     exception,
@@ -694,6 +706,14 @@ public sealed class CandidateProfileController : Controller
             }
         }
 
+        var photoUrl =
+            uploadedPhoto?.SecureUrl ??
+            currentPhotoUrl;
+
+        var photoPublicId =
+            uploadedPhoto?.PublicId ??
+            currentPhotoPublicId;
+
         if (string.IsNullOrWhiteSpace(photoUrl))
         {
             ModelState.AddModelError(
@@ -707,18 +727,21 @@ public sealed class CandidateProfileController : Controller
 
         if (profile is null)
         {
-            profile = new CandidateProfile
-            {
-                UserId = userId,
-                FirstName =
-                    model.FirstName.Trim(),
-                LastName =
-                    model.LastName.Trim(),
-                Location =
-                    model.Location.Trim(),
-                PersonalPhotoUrl =
-                    photoUrl
-            };
+            profile =
+                new CandidateProfile
+                {
+                    UserId = userId,
+                    FirstName =
+                        model.FirstName.Trim(),
+                    LastName =
+                        model.LastName.Trim(),
+                    Location =
+                        model.Location.Trim(),
+                    PersonalPhotoUrl =
+                        photoUrl,
+                    PersonalPhotoPublicId =
+                        photoPublicId
+                };
 
             _context.CandidateProfiles.Add(profile);
         }
@@ -740,12 +763,19 @@ public sealed class CandidateProfileController : Controller
 
             profile.PersonalPhotoUrl =
                 photoUrl;
+
+            profile.PersonalPhotoPublicId =
+                photoPublicId;
         }
+
+        var databaseSaved = false;
 
         try
         {
             await _context.SaveChangesAsync(
                 cancellationToken);
+
+            databaseSaved = true;
         }
         catch (DbUpdateConcurrencyException)
         {
@@ -821,11 +851,56 @@ public sealed class CandidateProfileController : Controller
 
             return View(model);
         }
+        finally
+        {
+            if (!databaseSaved &&
+                uploadedPhoto is not null)
+            {
+                await TryDeletePhotoAsync(
+                    uploadedPhoto.PublicId,
+                    userId);
+            }
+        }
+
+        if (uploadedPhoto is not null &&
+            !string.Equals(
+                currentPhotoPublicId,
+                uploadedPhoto.PublicId,
+                StringComparison.Ordinal))
+        {
+            await TryDeletePhotoAsync(
+                currentPhotoPublicId,
+                userId);
+        }
 
         TempData["ProfileMessage"] =
             "Profile saved successfully.";
 
         return RedirectToAction(nameof(Index));
+    }
+
+    private async Task TryDeletePhotoAsync(
+        string? publicId,
+        string userId)
+    {
+        if (string.IsNullOrWhiteSpace(publicId))
+        {
+            return;
+        }
+
+        try
+        {
+            await _imageService.DeleteAsync(
+                publicId);
+        }
+        catch (Exception exception)
+        {
+            _logger.LogWarning(
+                exception,
+                "Cloudinary profile photo cleanup failed for user {UserId}. Public ID: {PublicId}.",
+                userId,
+                publicId);
+        }
     }
 
     private static bool IsHttpUrl(
