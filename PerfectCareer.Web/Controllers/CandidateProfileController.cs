@@ -37,11 +37,11 @@ public sealed class CandidateProfileController : Controller
 
     [HttpGet]
     public Task<IActionResult> Index(
-        CancellationToken cancellationToken) =>
-        RenderProfileAsync(
-            nameof(Index),
-            false,
-            cancellationToken);
+    CancellationToken cancellationToken) =>
+    RenderProfileAsync(
+        nameof(Index),
+        loadAttributes: true,
+        cancellationToken: cancellationToken);
 
     [HttpGet]
     public Task<IActionResult> Info(

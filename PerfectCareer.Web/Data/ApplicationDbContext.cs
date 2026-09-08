@@ -148,6 +148,69 @@ public class ApplicationDbContext : IdentityDbContext
                 Category = AttributeCategory.PersonalInformation,
                 DataType = AttributeDataType.Boolean,
                 IsBuiltIn = false
+            },
+            new
+            {
+                Id = 8,
+                Name = "Professional Summary",
+                Description = "A concise overview of the candidate's professional background and career goals.",
+                Category = AttributeCategory.PersonalInformation,
+                DataType = AttributeDataType.MarkdownText,
+                IsBuiltIn = false
+            },
+            new
+            {
+                Id = 9,
+                Name = "GitHub Profile",
+                Description = "The candidate's GitHub profile URL or username.",
+                Category = AttributeCategory.DomainKnowledge,
+                DataType = AttributeDataType.Text,
+                IsBuiltIn = false
+            },
+            new
+            {
+                Id = 10,
+                Name = "Years of Experience",
+                Description = "The candidate's total years of professional experience.",
+                Category = AttributeCategory.DomainKnowledge,
+                DataType = AttributeDataType.Number,
+                IsBuiltIn = false
+            },
+            new
+            {
+                Id = 11,
+                Name = "Available Start Date",
+                Description = "The date when the candidate is available to start a new position.",
+                Category = AttributeCategory.PersonalInformation,
+                DataType = AttributeDataType.Date,
+                IsBuiltIn = false
+            },
+            new
+            {
+                Id = 12,
+                Name = "Relevant Experience Period",
+                Description = "The start and end dates of the candidate's most relevant experience.",
+                Category = AttributeCategory.DomainKnowledge,
+                DataType = AttributeDataType.Period,
+                IsBuiltIn = false
+            },
+            new
+            {
+                Id = 13,
+                Name = "Open to Relocation",
+                Description = "Whether the candidate is willing to relocate for a position.",
+                Category = AttributeCategory.PersonalInformation,
+                DataType = AttributeDataType.Boolean,
+                IsBuiltIn = false
+            },
+            new
+            {
+                Id = 14,
+                Name = "English Level",
+                Description = "The candidate's overall English proficiency level.",
+                Category = AttributeCategory.Certification,
+                DataType = AttributeDataType.SingleChoice,
+                IsBuiltIn = false
             });
 
         builder.Entity<AttributeOption>().HasData(
@@ -168,6 +231,36 @@ public class ApplicationDbContext : IdentityDbContext
                 Id = 3,
                 AttributeDefinitionId = 6,
                 Label = "Advanced"
+            },
+            new
+            {
+                Id = 4,
+                AttributeDefinitionId = 14,
+                Label = "Beginner"
+            },
+            new
+            {
+                Id = 5,
+                AttributeDefinitionId = 14,
+                Label = "Intermediate"
+            },
+            new
+            {
+                Id = 6,
+                AttributeDefinitionId = 14,
+                Label = "Upper-Intermediate"
+            },
+            new
+            {
+                Id = 7,
+                AttributeDefinitionId = 14,
+                Label = "Advanced"
+            },
+            new
+            {
+                Id = 8,
+                AttributeDefinitionId = 14,
+                Label = "Fluent"
             });
     }
 }

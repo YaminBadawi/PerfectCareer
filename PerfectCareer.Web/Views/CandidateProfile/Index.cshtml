@@ -1,4 +1,7 @@
-﻿@model PerfectCareer.Web.ViewModels.Profiles.CandidateProfileDetailsViewModel
+﻿@using System.Globalization
+@using PerfectCareer.Web.Models.Attributes
+@using PerfectCareer.Web.ViewModels.Profiles
+@model CandidateProfileDetailsViewModel
 
 @{
     ViewData["Title"] = "My profile";
@@ -6,6 +9,66 @@
     var hasPhoto =
         Model.HasProfile &&
         !string.IsNullOrWhiteSpace(Model.PersonalPhotoUrl);
+
+    var additionalAttributes = Model.Attributes
+        .Where(item => item.IsSelected && !item.IsBuiltIn)
+        .ToArray();
+
+    string FormatDate(DateOnly date) =>
+        date.ToString(
+            "MMM d, yyyy",
+            CultureInfo.InvariantCulture);
+
+    string GetAttributeValue(
+        AttributeLibraryItemViewModel attribute) =>
+        attribute.DataType switch
+        {
+            AttributeDataType.Text or
+            AttributeDataType.MarkdownText or
+            AttributeDataType.ExternalImage =>
+                string.IsNullOrWhiteSpace(attribute.TextValue)
+                    ? "Not added"
+                    : attribute.TextValue,
+
+            AttributeDataType.Number =>
+                attribute.NumberValue?.ToString(
+                    "0.####",
+                    CultureInfo.InvariantCulture)
+                ?? "Not added",
+
+            AttributeDataType.Date
+                when attribute.DateValue.HasValue =>
+                    FormatDate(attribute.DateValue.Value),
+
+            AttributeDataType.Period
+                when attribute.PeriodStart.HasValue &&
+                     attribute.PeriodEnd.HasValue =>
+                    $"{FormatDate(attribute.PeriodStart.Value)} – " +
+                    FormatDate(attribute.PeriodEnd.Value),
+
+            AttributeDataType.Period
+                when attribute.PeriodStart.HasValue =>
+                    $"From {FormatDate(attribute.PeriodStart.Value)}",
+
+            AttributeDataType.Period
+                when attribute.PeriodEnd.HasValue =>
+                    $"Until {FormatDate(attribute.PeriodEnd.Value)}",
+
+            AttributeDataType.Boolean
+                when attribute.BooleanValue.HasValue =>
+                    attribute.BooleanValue.Value
+                        ? "Yes"
+                        : "No",
+
+            AttributeDataType.SingleChoice =>
+                attribute.Options
+                    .FirstOrDefault(option =>
+                        option.Id == attribute.SelectedOptionId)
+                    ?.Label
+                ?? "Not added",
+
+            _ => "Not added"
+        };
 }
 
 @section Styles {
@@ -130,14 +193,29 @@
                 </div>
             </div>
 
-            <div class="pc-empty-state">
-                <h3>No additional information yet</h3>
+            @if (additionalAttributes.Length == 0)
+            {
+                <div class="pc-empty-state">
+                    <h3>No additional information yet</h3>
 
-                <p>
-                    Skills and reusable profile information will appear
-                    here after they are added.
-                </p>
-            </div>
+                    <p>
+                        Skills and reusable profile information will appear
+                        here after they are added.
+                    </p>
+                </div>
+            }
+            else
+            {
+                <dl class="pc-info-list">
+                    @foreach (var item in additionalAttributes)
+                    {
+                        <div class="pc-info-row">
+                            <dt>@item.Name</dt>
+                            <dd>@GetAttributeValue(item)</dd>
+                        </div>
+                    }
+                </dl>
+            }
         </section>
     </div>
 </div>
