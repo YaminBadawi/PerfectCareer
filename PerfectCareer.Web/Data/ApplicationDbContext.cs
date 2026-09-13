@@ -25,6 +25,9 @@ public class ApplicationDbContext : IdentityDbContext
     public DbSet<CandidateAttributeValue> CandidateAttributeValues =>
         Set<CandidateAttributeValue>();
 
+    public DbSet<CandidateAttributeUsage> CandidateAttributeUsages =>
+        Set<CandidateAttributeUsage>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -83,6 +86,25 @@ public class ApplicationDbContext : IdentityDbContext
                     option.Id
                 })
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        builder.Entity<CandidateAttributeUsage>(entity =>
+        {
+            entity.HasKey(usage => new
+            {
+                usage.CandidateProfileId,
+                usage.AttributeDefinitionId
+            });
+
+            entity.HasOne(usage => usage.CandidateProfile)
+                .WithMany()
+                .HasForeignKey(usage => usage.CandidateProfileId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(usage => usage.AttributeDefinition)
+                .WithMany()
+                .HasForeignKey(usage => usage.AttributeDefinitionId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         builder.Entity<AttributeDefinition>().HasData(

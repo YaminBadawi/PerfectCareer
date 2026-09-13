@@ -367,15 +367,16 @@
                                  aria-label="Attribute library filter">
 
                                 <button type="button"
+                                        id="pc-info-filter-all"
                                         class="nav-link active"
                                         aria-pressed="true">
                                     All attributes
                                 </button>
 
                                 <button type="button"
+                                        id="pc-info-filter-recent"
                                         class="nav-link"
-                                        aria-pressed="false"
-                                        disabled>
+                                        aria-pressed="false">
                                     Recently used
                                 </button>
                             </div>
@@ -394,7 +395,9 @@
                                         <label class="d-flex align-items-start gap-3 border-bottom py-3"
                                                data-library-item
                                                data-name="@definition.Name.ToLowerInvariant()"
-                                               data-category="@((int)definition.Category)">
+                                               data-category="@((int)definition.Category)"
+                                               data-recently-used="@(definition.LastUsedAtUtc.HasValue ? "true" : "false")"
+                                               data-last-used-at="@(definition.LastUsedAtUtc?.ToUnixTimeMilliseconds() ?? 0)">
 
                                             <input type="checkbox"
                                                    name="attributeIds"
@@ -706,6 +709,25 @@
                 "pc-info-no-results"
             );
 
+            const libraryResults = document.getElementById(
+                "pc-info-library-results"
+            );
+
+            const allFilterButton = document.getElementById(
+                "pc-info-filter-all"
+            );
+
+            const recentFilterButton = document.getElementById(
+                "pc-info-filter-recent"
+            );
+
+            let libraryMode = "all";
+
+            libraryItems.forEach((item, index) => {
+                item.dataset.originalOrder =
+                    index.toString();
+            });
+
             const removeButton = document.getElementById(
                 "pc-info-remove-selected"
             );
@@ -761,9 +783,15 @@
                         item.dataset.category ===
                         selectedCategory;
 
+                    const matchesMode =
+                        libraryMode === "all" ||
+                        item.dataset.recentlyUsed ===
+                        "true";
+
                     const isVisible =
                         matchesName &&
-                        matchesCategory;
+                        matchesCategory &&
+                        matchesMode;
 
                     item.hidden = !isVisible;
 
@@ -775,6 +803,67 @@
                 noResults.hidden =
                     visibleCount !== 0 ||
                     libraryItems.length === 0;
+
+                noResults.textContent =
+                    libraryMode === "recent"
+                        ? "No recently used attributes."
+                        : "No attributes found.";
+            };
+
+            const sortLibraryItems = () => {
+                const sortedItems = [...libraryItems]
+                    .sort((left, right) => {
+                        if (libraryMode === "recent") {
+                            return Number(
+                                right.dataset.lastUsedAt
+                            ) - Number(
+                                left.dataset.lastUsedAt
+                            );
+                        }
+
+                        return Number(
+                            left.dataset.originalOrder
+                        ) - Number(
+                            right.dataset.originalOrder
+                        );
+                    });
+
+                sortedItems.forEach(item => {
+                    libraryResults.insertBefore(
+                        item,
+                        noResults
+                    );
+                });
+            };
+
+            const setLibraryMode = mode => {
+                libraryMode = mode;
+
+                const showAll =
+                    mode === "all";
+
+                allFilterButton.classList.toggle(
+                    "active",
+                    showAll
+                );
+
+                recentFilterButton.classList.toggle(
+                    "active",
+                    !showAll
+                );
+
+                allFilterButton.setAttribute(
+                    "aria-pressed",
+                    showAll.toString()
+                );
+
+                recentFilterButton.setAttribute(
+                    "aria-pressed",
+                    (!showAll).toString()
+                );
+
+                sortLibraryItems();
+                filterLibrary();
             };
 
             choices.forEach(choice => {
@@ -799,6 +888,16 @@
             category.addEventListener(
                 "change",
                 filterLibrary
+            );
+
+            allFilterButton.addEventListener(
+                "click",
+                () => setLibraryMode("all")
+            );
+
+            recentFilterButton.addEventListener(
+                "click",
+                () => setLibraryMode("recent")
             );
 
             updateAddButton();

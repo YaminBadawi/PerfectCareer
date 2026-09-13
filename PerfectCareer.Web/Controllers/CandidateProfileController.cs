@@ -37,18 +37,18 @@ public sealed class CandidateProfileController : Controller
 
     [HttpGet]
     public Task<IActionResult> Index(
-    CancellationToken cancellationToken) =>
-    RenderProfileAsync(
-        nameof(Index),
-        loadAttributes: true,
-        cancellationToken: cancellationToken);
+        CancellationToken cancellationToken) =>
+        RenderProfileAsync(
+            nameof(Index),
+            loadAttributes: true,
+            cancellationToken);
 
     [HttpGet]
     public Task<IActionResult> Info(
         CancellationToken cancellationToken) =>
         RenderProfileAsync(
             nameof(Info),
-            true,
+            loadAttributes: true,
             cancellationToken);
 
     private async Task<IActionResult> RenderProfileAsync(
@@ -86,20 +86,30 @@ public sealed class CandidateProfileController : Controller
                 .ToDictionary(
                     item => item.AttributeDefinitionId);
 
-            var definitions =
-                await _context.AttributeDefinitions
-                    .AsNoTracking()
-                    .OrderBy(item => item.Category)
-                    .ThenBy(item => item.Name)
-                    .ToArrayAsync(cancellationToken);
+            var usageTimesByDefinitionId =
+                profile is null
+                    ? new Dictionary<int, DateTimeOffset>()
+                    : await _context.CandidateAttributeUsages
+                        .AsNoTracking()
+                        .Where(item =>
+                            item.CandidateProfileId == profile.Id)
+                        .ToDictionaryAsync(
+                            item => item.AttributeDefinitionId,
+                            item => item.LastUsedAtUtc,
+                            cancellationToken);
 
-            var optionGroups =
-                (await _context.AttributeOptions
+            var definitions = await _context.AttributeDefinitions
+                .AsNoTracking()
+                .OrderBy(item => item.Category)
+                .ThenBy(item => item.Name)
+                .ToArrayAsync(cancellationToken);
+
+            var optionGroups = (await _context.AttributeOptions
                     .AsNoTracking()
                     .OrderBy(item => item.Id)
                     .ToArrayAsync(cancellationToken))
-                .GroupBy(
-                    item => item.AttributeDefinitionId)
+                .GroupBy(item =>
+                    item.AttributeDefinitionId)
                 .ToDictionary(
                     group => group.Key,
                     group => group
@@ -133,6 +143,9 @@ public sealed class CandidateProfileController : Controller
                         IsSelected =
                             definition.IsBuiltIn ||
                             value is not null,
+                        LastUsedAtUtc =
+                            usageTimesByDefinitionId
+                                .GetValueOrDefault(definition.Id),
                         TextValue = value?.TextValue,
                         NumberValue = value?.NumberValue,
                         DateValue = value?.DateValue,
@@ -154,23 +167,21 @@ public sealed class CandidateProfileController : Controller
                 .ToArray();
         }
 
-        var model =
-            new CandidateProfileDetailsViewModel
-            {
-                HasProfile = profile is not null,
-                FirstName =
-                    profile?.FirstName ?? string.Empty,
-                LastName =
-                    profile?.LastName ?? string.Empty,
-                Location =
-                    profile?.Location ?? string.Empty,
-                PersonalPhotoUrl =
-                    profile?.PersonalPhotoUrl ??
-                    string.Empty,
-                CompletionPercentage =
-                    profile is null ? 0 : 100,
-                Attributes = attributes
-            };
+        var model = new CandidateProfileDetailsViewModel
+        {
+            HasProfile = profile is not null,
+            FirstName =
+                profile?.FirstName ?? string.Empty,
+            LastName =
+                profile?.LastName ?? string.Empty,
+            Location =
+                profile?.Location ?? string.Empty,
+            PersonalPhotoUrl =
+                profile?.PersonalPhotoUrl ?? string.Empty,
+            CompletionPercentage =
+                profile is null ? 0 : 100,
+            Attributes = attributes
+        };
 
         return View(viewName, model);
     }
@@ -188,11 +199,10 @@ public sealed class CandidateProfileController : Controller
             return Challenge();
         }
 
-        var profileId =
-            await _context.CandidateProfiles
-                .Where(item => item.UserId == userId)
-                .Select(item => (int?)item.Id)
-                .SingleOrDefaultAsync(cancellationToken);
+        var profileId = await _context.CandidateProfiles
+            .Where(item => item.UserId == userId)
+            .Select(item => (int?)item.Id)
+            .SingleOrDefaultAsync(cancellationToken);
 
         if (profileId is null)
         {
@@ -210,41 +220,47 @@ public sealed class CandidateProfileController : Controller
             return RedirectToAction(nameof(Info));
         }
 
-        var validIds =
-            await _context.AttributeDefinitions
-                .AsNoTracking()
-                .Where(item =>
-                    requestedIds.Contains(item.Id) &&
-                    !item.IsBuiltIn)
-                .Select(item => item.Id)
-                .ToArrayAsync(cancellationToken);
+        var validIds = await _context.AttributeDefinitions
+            .AsNoTracking()
+            .Where(item =>
+                requestedIds.Contains(item.Id) &&
+                !item.IsBuiltIn)
+            .Select(item => item.Id)
+            .ToArrayAsync(cancellationToken);
 
-        var existingIds =
-            await _context.CandidateAttributeValues
-                .AsNoTracking()
-                .Where(item =>
-                    item.CandidateProfileId ==
-                        profileId.Value &&
-                    validIds.Contains(
-                        item.AttributeDefinitionId))
-                .Select(item =>
-                    item.AttributeDefinitionId)
-                .ToArrayAsync(cancellationToken);
+        if (validIds.Length == 0)
+        {
+            return RedirectToAction(nameof(Info));
+        }
 
-        var newValues =
-            validIds
-                .Except(existingIds)
-                .Select(definitionId =>
-                    new CandidateAttributeValue
-                    {
-                        CandidateProfileId =
-                            profileId.Value,
-                        AttributeDefinitionId =
-                            definitionId
-                    });
+        var existingIds = await _context.CandidateAttributeValues
+            .AsNoTracking()
+            .Where(item =>
+                item.CandidateProfileId == profileId.Value &&
+                validIds.Contains(item.AttributeDefinitionId))
+            .Select(item =>
+                item.AttributeDefinitionId)
+            .ToArrayAsync(cancellationToken);
+
+        var newValues = validIds
+            .Except(existingIds)
+            .Select(definitionId =>
+                new CandidateAttributeValue
+                {
+                    CandidateProfileId =
+                        profileId.Value,
+                    AttributeDefinitionId =
+                        definitionId
+                })
+            .ToArray();
 
         _context.CandidateAttributeValues
             .AddRange(newValues);
+
+        await TouchAttributeUsagesAsync(
+            profileId.Value,
+            validIds,
+            cancellationToken);
 
         try
         {
@@ -255,7 +271,8 @@ public sealed class CandidateProfileController : Controller
             exception.InnerException is
                 SqlException { Number: 2601 or 2627 })
         {
-            // Another request added the same attributes.
+            TempData["InfoError"] =
+                "The attributes were changed in another session. Refresh and try again.";
         }
 
         return RedirectToAction(nameof(Info));
@@ -285,28 +302,25 @@ public sealed class CandidateProfileController : Controller
             return RedirectToAction(nameof(Info));
         }
 
-        var profileId =
-            await _context.CandidateProfiles
-                .Where(item => item.UserId == userId)
-                .Select(item => (int?)item.Id)
-                .SingleOrDefaultAsync(cancellationToken);
+        var profileId = await _context.CandidateProfiles
+            .Where(item => item.UserId == userId)
+            .Select(item => (int?)item.Id)
+            .SingleOrDefaultAsync(cancellationToken);
 
         if (profileId is null)
         {
             return RedirectToAction(nameof(Info));
         }
 
-        var values =
-            await _context.CandidateAttributeValues
-                .Include(item =>
-                    item.AttributeDefinition)
-                .Where(item =>
-                    item.CandidateProfileId ==
-                        profileId.Value &&
-                    requestedIds.Contains(
-                        item.AttributeDefinitionId) &&
-                    !item.AttributeDefinition.IsBuiltIn)
-                .ToArrayAsync(cancellationToken);
+        var values = await _context.CandidateAttributeValues
+            .Include(item =>
+                item.AttributeDefinition)
+            .Where(item =>
+                item.CandidateProfileId == profileId.Value &&
+                requestedIds.Contains(
+                    item.AttributeDefinitionId) &&
+                !item.AttributeDefinition.IsBuiltIn)
+            .ToArrayAsync(cancellationToken);
 
         if (values.Length == 0)
         {
@@ -315,6 +329,14 @@ public sealed class CandidateProfileController : Controller
 
         _context.CandidateAttributeValues
             .RemoveRange(values);
+
+        await TouchAttributeUsagesAsync(
+            profileId.Value,
+            values
+                .Select(item =>
+                    item.AttributeDefinitionId)
+                .ToArray(),
+            cancellationToken);
 
         try
         {
@@ -325,6 +347,13 @@ public sealed class CandidateProfileController : Controller
         {
             TempData["InfoError"] =
                 "One or more attributes changed in another session. Try again.";
+        }
+        catch (DbUpdateException exception) when (
+            exception.InnerException is
+                SqlException { Number: 2601 or 2627 })
+        {
+            TempData["InfoError"] =
+                "The attributes were changed in another session. Refresh and try again.";
         }
 
         return RedirectToAction(nameof(Info));
@@ -364,11 +393,10 @@ public sealed class CandidateProfileController : Controller
             return Challenge();
         }
 
-        var profileId =
-            await _context.CandidateProfiles
-                .Where(item => item.UserId == userId)
-                .Select(item => (int?)item.Id)
-                .SingleOrDefaultAsync(cancellationToken);
+        var profileId = await _context.CandidateProfiles
+            .Where(item => item.UserId == userId)
+            .Select(item => (int?)item.Id)
+            .SingleOrDefaultAsync(cancellationToken);
 
         if (profileId is null)
         {
@@ -379,17 +407,16 @@ public sealed class CandidateProfileController : Controller
             });
         }
 
-        var value =
-            await _context.CandidateAttributeValues
-                .Include(item =>
-                    item.AttributeDefinition)
-                .SingleOrDefaultAsync(
-                    item =>
-                        item.CandidateProfileId ==
-                            profileId.Value &&
-                        item.AttributeDefinitionId ==
-                            request.AttributeDefinitionId,
-                    cancellationToken);
+        var value = await _context.CandidateAttributeValues
+            .Include(item =>
+                item.AttributeDefinition)
+            .SingleOrDefaultAsync(
+                item =>
+                    item.CandidateProfileId ==
+                        profileId.Value &&
+                    item.AttributeDefinitionId ==
+                        request.AttributeDefinitionId,
+                cancellationToken);
 
         if (value is null ||
             value.AttributeDefinition.IsBuiltIn)
@@ -561,21 +588,23 @@ public sealed class CandidateProfileController : Controller
             return Challenge();
         }
 
-        var profile =
-            await _context.CandidateProfiles
-                .AsNoTracking()
-                .SingleOrDefaultAsync(
-                    item => item.UserId == userId,
-                    cancellationToken);
+        var profile = await _context.CandidateProfiles
+            .AsNoTracking()
+            .SingleOrDefaultAsync(
+                item => item.UserId == userId,
+                cancellationToken);
 
         var model =
             profile is null
                 ? new CandidateProfileEditViewModel()
                 : new CandidateProfileEditViewModel
                 {
-                    FirstName = profile.FirstName,
-                    LastName = profile.LastName,
-                    Location = profile.Location,
+                    FirstName =
+                        profile.FirstName,
+                    LastName =
+                        profile.LastName,
+                    Location =
+                        profile.Location,
                     PersonalPhotoUrl =
                         profile.PersonalPhotoUrl,
                     RowVersion =
@@ -598,11 +627,10 @@ public sealed class CandidateProfileController : Controller
             return Challenge();
         }
 
-        var profile =
-            await _context.CandidateProfiles
-                .SingleOrDefaultAsync(
-                    item => item.UserId == userId,
-                    cancellationToken);
+        var profile = await _context.CandidateProfiles
+            .SingleOrDefaultAsync(
+                item => item.UserId == userId,
+                cancellationToken);
 
         var currentPhotoUrl =
             profile?.PersonalPhotoUrl ??
@@ -727,21 +755,20 @@ public sealed class CandidateProfileController : Controller
 
         if (profile is null)
         {
-            profile =
-                new CandidateProfile
-                {
-                    UserId = userId,
-                    FirstName =
-                        model.FirstName.Trim(),
-                    LastName =
-                        model.LastName.Trim(),
-                    Location =
-                        model.Location.Trim(),
-                    PersonalPhotoUrl =
-                        photoUrl,
-                    PersonalPhotoPublicId =
-                        photoPublicId
-                };
+            profile = new CandidateProfile
+            {
+                UserId = userId,
+                FirstName =
+                    model.FirstName.Trim(),
+                LastName =
+                    model.LastName.Trim(),
+                Location =
+                    model.Location.Trim(),
+                PersonalPhotoUrl =
+                    photoUrl,
+                PersonalPhotoPublicId =
+                    photoPublicId
+            };
 
             _context.CandidateProfiles.Add(profile);
         }
@@ -900,6 +927,59 @@ public sealed class CandidateProfileController : Controller
                 "Cloudinary profile photo cleanup failed for user {UserId}. Public ID: {PublicId}.",
                 userId,
                 publicId);
+        }
+    }
+
+    private async Task TouchAttributeUsagesAsync(
+        int candidateProfileId,
+        IReadOnlyCollection<int> attributeDefinitionIds,
+        CancellationToken cancellationToken)
+    {
+        if (attributeDefinitionIds.Count == 0)
+        {
+            return;
+        }
+
+        var ids = attributeDefinitionIds
+            .Distinct()
+            .ToArray();
+
+        var existingUsages =
+            await _context.CandidateAttributeUsages
+                .Where(item =>
+                    item.CandidateProfileId ==
+                        candidateProfileId &&
+                    ids.Contains(
+                        item.AttributeDefinitionId))
+                .ToDictionaryAsync(
+                    item => item.AttributeDefinitionId,
+                    cancellationToken);
+
+        var usedAtUtc =
+            DateTimeOffset.UtcNow;
+
+        foreach (var definitionId in ids)
+        {
+            if (existingUsages.TryGetValue(
+                    definitionId,
+                    out var usage))
+            {
+                usage.LastUsedAtUtc =
+                    usedAtUtc;
+
+                continue;
+            }
+
+            _context.CandidateAttributeUsages.Add(
+                new CandidateAttributeUsage
+                {
+                    CandidateProfileId =
+                        candidateProfileId,
+                    AttributeDefinitionId =
+                        definitionId,
+                    LastUsedAtUtc =
+                        usedAtUtc
+                });
         }
     }
 

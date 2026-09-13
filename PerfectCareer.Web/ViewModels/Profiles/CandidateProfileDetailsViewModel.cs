@@ -61,6 +61,8 @@ public sealed class AttributeLibraryItemViewModel
 
     public bool IsSelected { get; init; }
 
+    public DateTimeOffset? LastUsedAtUtc { get; init; }
+
     public string? TextValue { get; init; }
 
     public decimal? NumberValue { get; init; }
