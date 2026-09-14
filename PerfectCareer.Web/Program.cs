@@ -22,6 +22,7 @@ builder.Services.AddDefaultIdentity<IdentityUser>(
     .AddEntityFrameworkStores<ApplicationDbContext>();
 
 builder.Services.AddScoped<CloudinaryImageService>();
+builder.Services.AddSingleton<MarkdownRenderer>();
 
 builder.Services.AddControllersWithViews();
 

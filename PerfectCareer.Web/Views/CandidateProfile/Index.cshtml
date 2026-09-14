@@ -1,6 +1,8 @@
 ﻿@using System.Globalization
 @using PerfectCareer.Web.Models.Attributes
+@using PerfectCareer.Web.Services
 @using PerfectCareer.Web.ViewModels.Profiles
+@inject MarkdownRenderer MarkdownRenderer
 @model CandidateProfileDetailsViewModel
 
 @{
@@ -24,7 +26,6 @@
         attribute.DataType switch
         {
             AttributeDataType.Text or
-            AttributeDataType.MarkdownText or
             AttributeDataType.ExternalImage =>
                 string.IsNullOrWhiteSpace(attribute.TextValue)
                     ? "Not added"
@@ -211,7 +212,21 @@
                     {
                         <div class="pc-info-row">
                             <dt>@item.Name</dt>
-                            <dd>@GetAttributeValue(item)</dd>
+
+                            @if (item.DataType ==
+                                 AttributeDataType.MarkdownText &&
+                                 !string.IsNullOrWhiteSpace(item.TextValue))
+                            {
+                                <dd class="pc-markdown-content">
+                                    @Html.Raw(
+                                        MarkdownRenderer.ToHtml(
+                                            item.TextValue))
+                                </dd>
+                            }
+                            else
+                            {
+                                <dd>@GetAttributeValue(item)</dd>
+                            }
                         </div>
                     }
                 </dl>
