@@ -5,6 +5,12 @@
 
     var hasCurrentPhoto =
         !string.IsNullOrWhiteSpace(Model.PersonalPhotoUrl);
+
+    var canAutoSave =
+        Model.RowVersion is not null;
+
+    var hasValidationErrors =
+        !ViewData.ModelState.IsValid;
 }
 
 @section Styles {
@@ -38,7 +44,9 @@
         <div class="row g-4">
             <div class="col-lg-8">
                 <section class="pc-profile-card pc-edit-card">
-                    <form asp-controller="CandidateProfile"
+                    <form id="pc-profile-edit-form"
+                          data-auto-save-url="@Url.Action("Save", "CandidateProfileAutoSave")"
+                          asp-controller="CandidateProfile"
                           asp-action="Edit"
                           method="post"
                           enctype="multipart/form-data">
@@ -51,6 +59,7 @@
                         @if (Model.RowVersion is not null)
                         {
                             <input type="hidden"
+                                   id="pc-profile-row-version"
                                    name="RowVersion"
                                    value="@Convert.ToBase64String(Model.RowVersion)" />
                         }
@@ -175,8 +184,39 @@
                             </div>
                         </div>
 
+                        <div class="d-flex flex-wrap align-items-center gap-2 mt-4">
+                            <span id="pc-profile-save-status"
+                                  class="small @(hasValidationErrors
+                                                                      ? "text-warning"
+                                                                      : canAutoSave
+                                                                          ? "text-success"
+                                                                          : "text-muted")"
+                                  role="status"
+                                  aria-live="polite">
+
+                                @(hasValidationErrors
+                                    ? "Review the errors before saving."
+                                    : canAutoSave
+                                        ? "All changes saved"
+                                        : "Save the profile once to enable auto-save.")
+                            </span>
+
+                            <button id="pc-profile-reload"
+                                    type="button"
+                                    class="btn btn-sm btn-outline-danger d-none">
+                                Reload saved version
+                            </button>
+                        </div>
+
+                        <p class="small text-muted mt-2 mb-0">
+                            First name, last name, and location are saved
+                            automatically every 5 seconds. Use Save profile
+                            after choosing a new photo.
+                        </p>
+
                         <div class="pc-edit-actions">
                             <button type="submit"
+                                    id="pc-profile-submit"
                                     class="btn btn-primary">
                                 Save profile
                             </button>
@@ -225,6 +265,10 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+
+    <script src="~/js/candidate-profile-autosave.js"
+            asp-append-version="true">
+    </script>
 
     <script>
         (() => {
@@ -366,6 +410,7 @@
                         eventName,
                         event => {
                             event.preventDefault();
+
                             dropZone.classList.add(
                                 "border-primary");
                         });
