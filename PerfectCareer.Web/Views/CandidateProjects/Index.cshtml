@@ -1,0 +1,151 @@
+﻿@using System.Globalization
+@using PerfectCareer.Web.Services
+@using PerfectCareer.Web.ViewModels.Projects
+@inject MarkdownRenderer MarkdownRenderer
+@model CandidateProjectsViewModel
+
+@{
+    ViewData["Title"] = "My projects";
+
+    string FormatMonth(DateOnly date) =>
+        date.ToString(
+            "MMM yyyy",
+            CultureInfo.InvariantCulture);
+}
+
+@section Styles {
+    <link rel="stylesheet"
+          href="~/css/Pages_/profile.css"
+          asp-append-version="true" />
+}
+
+<div class="pc-profile-page">
+    <div class="container-xl pc-profile-shell">
+
+        @if (TempData["ProjectMessage"] is string message)
+        {
+            <div class="alert alert-success alert-dismissible fade show"
+                 role="alert">
+                @message
+
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="alert"
+                        aria-label="Close">
+                </button>
+            </div>
+        }
+
+        @if (TempData["ProjectError"] is string error)
+        {
+            <div class="alert alert-danger alert-dismissible fade show"
+                 role="alert">
+                @error
+
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="alert"
+                        aria-label="Close">
+                </button>
+            </div>
+        }
+
+        <partial name="~/Views/CandidateProfile/_ProfileHeader.cshtml"
+                 model="Model.Profile" />
+
+        <section class="pc-profile-card">
+            <div class="pc-card-heading align-items-start">
+                <div>
+                    <p class="pc-card-eyebrow">PROJECTS</p>
+
+                    <h2>Your projects</h2>
+
+                    <p class="text-muted mb-0">
+                        Add projects once, then reuse the relevant ones
+                        in tailored CVs.
+                    </p>
+                </div>
+
+                <button type="button"
+                        class="btn btn-primary"
+                        disabled>
+                    Add project
+                </button>
+            </div>
+
+            @if (Model.Projects.Count == 0)
+            {
+                <div class="pc-empty-state">
+                    <h3>No projects yet</h3>
+
+                    <p>
+                        Add your first project to showcase your work,
+                        experience, and technology skills.
+                    </p>
+                </div>
+            }
+            else
+            {
+                <div class="row g-3">
+                    @foreach (var project in Model.Projects)
+                    {
+                        <div class="col-xl-6">
+                            <article class="border rounded-3 p-4 h-100 d-flex flex-column">
+                                <div>
+                                    <h3 class="h5 fw-bold mb-2 text-break">
+                                        @project.Name
+                                    </h3>
+
+                                    <p class="small text-muted mb-3">
+                                        @FormatMonth(project.StartDate)
+                                        &ndash;
+                                        @FormatMonth(project.EndDate)
+                                    </p>
+                                </div>
+
+                                <div class="pc-markdown-content flex-grow-1 text-break">
+                                    @Html.Raw(
+                                        MarkdownRenderer.ToHtml(
+                                            project.Description))
+                                </div>
+
+                                @if (project.TechnologyTags.Count > 0)
+                                {
+                                    <div class="d-flex flex-wrap gap-2 mt-3"
+                                         aria-label="Technology tags">
+
+                                        @foreach (var tag in project.TechnologyTags)
+                                        {
+                                            <span class="badge rounded-pill bg-light text-primary border">
+                                                @tag
+                                            </span>
+                                        }
+                                    </div>
+                                }
+
+                                <div class="d-flex gap-2 border-top pt-3 mt-4">
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-primary"
+                                            disabled>
+                                        Edit
+                                    </button>
+
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-danger"
+                                            disabled>
+                                        Delete
+                                    </button>
+                                </div>
+                            </article>
+                        </div>
+                    }
+                </div>
+            }
+
+            <p class="small text-muted border-top pt-3 mt-4 mb-0">
+                Projects will be available for selection when a
+                position-specific CV is created.
+            </p>
+        </section>
+    </div>
+</div>

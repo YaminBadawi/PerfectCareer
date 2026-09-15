@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using PerfectCareer.Web.Models.Attributes;
 using PerfectCareer.Web.Models.Profiles;
+using PerfectCareer.Web.Models.Projects;
 
 namespace PerfectCareer.Web.Data;
 
@@ -27,6 +28,15 @@ public class ApplicationDbContext : IdentityDbContext
 
     public DbSet<CandidateAttributeUsage> CandidateAttributeUsages =>
         Set<CandidateAttributeUsage>();
+
+    public DbSet<CandidateProject> CandidateProjects =>
+        Set<CandidateProject>();
+
+    public DbSet<TechnologyTag> TechnologyTags =>
+        Set<TechnologyTag>();
+
+    public DbSet<CandidateProjectTechnologyTag> CandidateProjectTechnologyTags =>
+        Set<CandidateProjectTechnologyTag>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -104,6 +114,38 @@ public class ApplicationDbContext : IdentityDbContext
             entity.HasOne(usage => usage.AttributeDefinition)
                 .WithMany()
                 .HasForeignKey(usage => usage.AttributeDefinitionId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<CandidateProject>(entity =>
+        {
+            entity.HasOne(project => project.CandidateProfile)
+                .WithMany(profile => profile.Projects)
+                .HasForeignKey(project => project.CandidateProfileId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.ToTable(table =>
+                table.HasCheckConstraint(
+                    "CK_CandidateProjects_Period",
+                    "[EndDate] >= [StartDate]"));
+        });
+
+        builder.Entity<CandidateProjectTechnologyTag>(entity =>
+        {
+            entity.HasKey(projectTag => new
+            {
+                projectTag.CandidateProjectId,
+                projectTag.TechnologyTagId
+            });
+
+            entity.HasOne(projectTag => projectTag.CandidateProject)
+                .WithMany(project => project.ProjectTechnologyTags)
+                .HasForeignKey(projectTag => projectTag.CandidateProjectId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(projectTag => projectTag.TechnologyTag)
+                .WithMany(tag => tag.ProjectTechnologyTags)
+                .HasForeignKey(projectTag => projectTag.TechnologyTagId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 

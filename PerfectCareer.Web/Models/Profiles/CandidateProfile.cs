@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Identity;
+using PerfectCareer.Web.Models.Projects;
 
 namespace PerfectCareer.Web.Models.Profiles;
 
@@ -34,4 +35,7 @@ public class CandidateProfile
     public byte[] RowVersion { get; set; } = Array.Empty<byte>();
 
     public IdentityUser User { get; set; } = null!;
+
+    public ICollection<CandidateProject> Projects { get; set; } =
+        new List<CandidateProject>();
 }
