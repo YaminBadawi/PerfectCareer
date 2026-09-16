@@ -66,11 +66,11 @@
                     </p>
                 </div>
 
-                <button type="button"
-                        class="btn btn-primary"
-                        disabled>
+                <a class="btn btn-primary"
+                   asp-controller="CandidateProjects"
+                   asp-action="Create">
                     Add project
-                </button>
+                </a>
             </div>
 
             @if (Model.Projects.Count == 0)
@@ -113,7 +113,6 @@
                                 {
                                     <div class="d-flex flex-wrap gap-2 mt-3"
                                          aria-label="Technology tags">
-
                                         @foreach (var tag in project.TechnologyTags)
                                         {
                                             <span class="badge rounded-pill bg-light text-primary border">
@@ -124,17 +123,19 @@
                                 }
 
                                 <div class="d-flex gap-2 border-top pt-3 mt-4">
-                                    <button type="button"
-                                            class="btn btn-sm btn-outline-primary"
-                                            disabled>
+                                    <a class="btn btn-sm btn-outline-primary"
+                                       asp-controller="CandidateProjects"
+                                       asp-action="Edit"
+                                       asp-route-id="@project.Id">
                                         Edit
-                                    </button>
+                                    </a>
 
-                                    <button type="button"
-                                            class="btn btn-sm btn-outline-danger"
-                                            disabled>
+                                    <a class="btn btn-sm btn-outline-danger"
+                                       asp-controller="CandidateProjects"
+                                       asp-action="Delete"
+                                       asp-route-id="@project.Id">
                                         Delete
-                                    </button>
+                                    </a>
                                 </div>
                             </article>
                         </div>

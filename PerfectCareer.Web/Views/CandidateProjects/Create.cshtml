@@ -1,0 +1,340 @@
+﻿@using System.Text.Json
+@using PerfectCareer.Web.ViewModels.Projects
+@model CandidateProjectFormViewModel
+
+@{
+    var isEdit = Model.Id.HasValue;
+
+    ViewData["Title"] = isEdit
+        ? "Edit project"
+        : "Add project";
+
+    var suggestedTechnologyTagsJson =
+        JsonSerializer.Serialize(Model.SuggestedTechnologyTags);
+}
+
+@section Styles {
+    <link rel="stylesheet"
+          href="~/css/Pages_/profile.css"
+          asp-append-version="true" />
+
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/@@yaireo/tagify@4.38.0/dist/tagify.css" />
+}
+
+<div class="pc-profile-page">
+    <div class="container-xl pc-profile-shell">
+        <partial name="~/Views/CandidateProfile/_ProfileHeader.cshtml"
+                 model="Model.Profile" />
+
+        <div class="pc-edit-heading">
+            <div>
+                <p class="pc-card-eyebrow">PROJECTS</p>
+
+                <h1>@(isEdit ? "Edit project" : "Add project")</h1>
+
+                <p>
+                    @(isEdit
+                        ? "Update this reusable project and its technology tags."
+                        : "Create a reusable project that can later be included in tailored CVs.")
+                </p>
+            </div>
+
+            <a class="btn btn-outline-secondary"
+               asp-controller="CandidateProjects"
+               asp-action="Index">
+                &larr; Back to projects
+            </a>
+        </div>
+
+        <form asp-controller="CandidateProjects"
+              asp-action="@(isEdit ? "Edit" : "Create")"
+              asp-route-id="@(isEdit ? Model.Id : null)"
+              method="post">
+
+            @if (isEdit)
+            {
+                <input asp-for="Id" type="hidden" />
+                <input asp-for="RowVersion" type="hidden" />
+            }
+
+            <div asp-validation-summary="ModelOnly"
+                 class="alert alert-danger"
+                 role="alert">
+            </div>
+
+            <div class="row g-4">
+                <div class="col-lg-8">
+                    <section class="pc-profile-card pc-edit-card">
+                        <div class="pc-card-heading">
+                            <div>
+                                <h2>Project details</h2>
+
+                                <p class="small text-muted mb-0 mt-1">
+                                    All fields are required.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="row g-4">
+                            <div class="col-12">
+                                <label asp-for="Name"
+                                       class="form-label">
+                                </label>
+
+                                <input asp-for="Name"
+                                       class="form-control"
+                                       placeholder="e.g. Online Laundry Service"
+                                       autocomplete="off"
+                                       aria-required="true" />
+
+                                <span asp-validation-for="Name"
+                                      class="text-danger">
+                                </span>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="StartDate"
+                                       class="form-label">
+                                </label>
+
+                                <input asp-for="StartDate"
+                                       class="form-control"
+                                       type="date"
+                                       aria-required="true" />
+
+                                <span asp-validation-for="StartDate"
+                                      class="text-danger">
+                                </span>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="EndDate"
+                                       class="form-label">
+                                </label>
+
+                                <input asp-for="EndDate"
+                                       class="form-control"
+                                       type="date"
+                                       aria-required="true" />
+
+                                <span asp-validation-for="EndDate"
+                                      class="text-danger">
+                                </span>
+                            </div>
+
+                            <div class="col-12">
+                                <label asp-for="Description"
+                                       class="form-label">
+                                </label>
+
+                                <textarea asp-for="Description"
+                                          class="form-control"
+                                          rows="8"
+                                          placeholder="Describe what you built, your role, and the result..."
+                                          aria-required="true"></textarea>
+
+                                <p class="pc-field-help">
+                                    Markdown formatting is supported.
+                                </p>
+
+                                <span asp-validation-for="Description"
+                                      class="text-danger">
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="pc-edit-actions">
+                            <button type="submit"
+                                    class="btn btn-primary">
+                                @(isEdit ? "Save changes" : "Save project")
+                            </button>
+
+                            <a class="btn btn-light"
+                               asp-controller="CandidateProjects"
+                               asp-action="Index">
+                                Cancel
+                            </a>
+                        </div>
+                    </section>
+                </div>
+
+                <div class="col-lg-4">
+                    <aside class="pc-profile-card pc-edit-card h-auto">
+                        <p class="pc-card-eyebrow">TECHNOLOGIES</p>
+
+                        <h2>Technology tags</h2>
+
+                        <p class="small text-muted mt-2">
+                            Search existing tags or create a new one.
+                        </p>
+
+                        <label asp-for="TechnologyTagsJson"
+                               class="form-label">
+                        </label>
+
+                        <input asp-for="TechnologyTagsJson"
+                               class="form-control"
+                               placeholder="Type a technology..."
+                               autocomplete="off"
+                               data-suggestions="@suggestedTechnologyTagsJson"
+                               aria-required="true" />
+
+                        <span asp-validation-for="TechnologyTagsJson"
+                              class="text-danger">
+                        </span>
+
+                        <p class="pc-field-help">
+                            Press Enter after each tag. Maximum 15 tags.
+                        </p>
+
+                        <hr class="my-4" />
+
+                        <h2 class="mb-3">Project preview</h2>
+
+                        <div class="rounded-3 bg-light p-4">
+                            <h3 id="pc-project-preview-name"
+                                class="h6 fw-bold text-break mb-2">
+                                Your project preview
+                            </h3>
+
+                            <p id="pc-project-preview-period"
+                               class="small text-muted mb-3">
+                                Add the project period.
+                            </p>
+
+                            <p id="pc-project-preview-description"
+                               class="small text-break mb-3"
+                               style="white-space: pre-wrap;">
+                                Your description will appear here.
+                            </p>
+
+                            <div id="pc-project-preview-tags"
+                                 class="d-flex flex-wrap gap-2"
+                                 aria-label="Selected technology tags">
+                            </div>
+                        </div>
+                    </aside>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script src="https://cdn.jsdelivr.net/npm/@@yaireo/tagify@4.38.0/dist/tagify.min.js">
+    </script>
+
+    <script>
+        (() => {
+            const nameInput = document.getElementById("Name");
+            const startDateInput = document.getElementById("StartDate");
+            const endDateInput = document.getElementById("EndDate");
+            const descriptionInput = document.getElementById("Description");
+            const tagsInput = document.getElementById("TechnologyTagsJson");
+
+            const previewName =
+                document.getElementById("pc-project-preview-name");
+
+            const previewPeriod =
+                document.getElementById("pc-project-preview-period");
+
+            const previewDescription =
+                document.getElementById("pc-project-preview-description");
+
+            const previewTags =
+                document.getElementById("pc-project-preview-tags");
+
+            if (!nameInput ||
+                !startDateInput ||
+                !endDateInput ||
+                !descriptionInput ||
+                !tagsInput ||
+                typeof Tagify === "undefined") {
+                return;
+            }
+
+            const suggestedTechnologyTags =
+                JSON.parse(tagsInput.dataset.suggestions || "[]");
+
+            const tagify = new Tagify(tagsInput, {
+                whitelist: suggestedTechnologyTags,
+                enforceWhitelist: false,
+                duplicates: false,
+                maxTags: 15,
+                trim: true,
+                validate: tagData =>
+                    tagData.value.trim().length <= 50 ||
+                    "A tag cannot exceed 50 characters.",
+                dropdown: {
+                    enabled: 0,
+                    maxItems: 10,
+                    closeOnSelect: false,
+                    highlightFirst: true
+                }
+            });
+
+            const formatMonth = value => {
+                if (!value) {
+                    return "";
+                }
+
+                const date = new Date(`${value}T00:00:00`);
+
+                return new Intl.DateTimeFormat(
+                    "en",
+                    {
+                        month: "short",
+                        year: "numeric"
+                    })
+                    .format(date);
+            };
+
+            const updatePreview = () => {
+                previewName.textContent =
+                    nameInput.value.trim() ||
+                    "Your project preview";
+
+                const startDate = formatMonth(startDateInput.value);
+                const endDate = formatMonth(endDateInput.value);
+
+                previewPeriod.textContent =
+                    startDate && endDate
+                        ? `${startDate} – ${endDate}`
+                        : "Add the project period.";
+
+                previewDescription.textContent =
+                    descriptionInput.value.trim() ||
+                    "Your description will appear here.";
+
+                previewTags.replaceChildren();
+
+                tagify.value.forEach(tag => {
+                    const badge = document.createElement("span");
+
+                    badge.className =
+                        "badge rounded-pill bg-white text-primary border";
+
+                    badge.textContent = tag.value;
+
+                    previewTags.appendChild(badge);
+                });
+            };
+
+            [
+                nameInput,
+                startDateInput,
+                endDateInput,
+                descriptionInput
+            ].forEach(input => {
+                input.addEventListener("input", updatePreview);
+            });
+
+            tagify.on("change", updatePreview);
+
+            updatePreview();
+        })();
+    </script>
+}

@@ -1,0 +1,109 @@
+﻿@using System.Globalization
+@using PerfectCareer.Web.ViewModels.Projects
+@model CandidateProjectDeleteViewModel
+
+@{
+    ViewData["Title"] = "Delete project";
+
+    string FormatMonth(DateOnly date) =>
+        date.ToString(
+            "MMM yyyy",
+            CultureInfo.InvariantCulture);
+}
+
+@section Styles {
+    <link rel="stylesheet"
+          href="~/css/Pages_/profile.css"
+          asp-append-version="true" />
+}
+
+<div class="pc-profile-page">
+    <div class="container-xl pc-profile-shell">
+        <partial name="~/Views/CandidateProfile/_ProfileHeader.cshtml"
+                 model="Model.Profile" />
+
+        <div class="pc-edit-heading">
+            <div>
+                <p class="pc-card-eyebrow">PROJECTS</p>
+
+                <h1>Delete project</h1>
+
+                <p>
+                    Review the project before permanently deleting it.
+                </p>
+            </div>
+
+            <a class="btn btn-outline-secondary"
+               asp-controller="CandidateProjects"
+               asp-action="Index">
+                &larr; Back to projects
+            </a>
+        </div>
+
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <section class="pc-profile-card pc-edit-card">
+                    <p class="pc-card-eyebrow text-danger">
+                        DANGER ZONE
+                    </p>
+
+                    <h2>Delete this project?</h2>
+
+                    <div class="alert alert-warning mt-3"
+                         role="alert">
+                        This action cannot be undone. The project will
+                        also be removed from future CV selections.
+                    </div>
+
+                    <article class="border rounded-3 p-4 mt-4">
+                        <h3 class="h5 fw-bold text-break mb-2">
+                            @Model.Name
+                        </h3>
+
+                        <p class="text-muted mb-3">
+                            @FormatMonth(Model.StartDate)
+                            &ndash;
+                            @FormatMonth(Model.EndDate)
+                        </p>
+
+                        @if (Model.TechnologyTags.Count > 0)
+                        {
+                            <div class="d-flex flex-wrap gap-2"
+                                 aria-label="Technology tags">
+                                @foreach (var tag in Model.TechnologyTags)
+                                {
+                                    <span class="badge rounded-pill bg-light text-primary border">
+                                        @tag
+                                    </span>
+                                }
+                            </div>
+                        }
+                    </article>
+
+                    <form asp-controller="CandidateProjects"
+                          asp-action="Delete"
+                          asp-route-id="@Model.Id"
+                          method="post">
+
+                        <input type="hidden"
+                               name="rowVersion"
+                               value="@Model.RowVersion" />
+
+                        <div class="pc-edit-actions">
+                            <button type="submit"
+                                    class="btn btn-danger">
+                                Delete project
+                            </button>
+
+                            <a class="btn btn-light"
+                               asp-controller="CandidateProjects"
+                               asp-action="Index">
+                                Cancel
+                            </a>
+                        </div>
+                    </form>
+                </section>
+            </div>
+        </div>
+    </div>
+</div>
