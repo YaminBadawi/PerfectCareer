@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using PerfectCareer.Web.Models.Attributes;
+using PerfectCareer.Web.Models.Cvs;
+using PerfectCareer.Web.Models.Positions;
 using PerfectCareer.Web.Models.Profiles;
 using PerfectCareer.Web.Models.Projects;
 
@@ -37,6 +39,21 @@ public class ApplicationDbContext : IdentityDbContext
 
     public DbSet<CandidateProjectTechnologyTag> CandidateProjectTechnologyTags =>
         Set<CandidateProjectTechnologyTag>();
+
+    public DbSet<Position> Positions =>
+        Set<Position>();
+
+    public DbSet<PositionTemplateAttribute> PositionTemplateAttributes =>
+        Set<PositionTemplateAttribute>();
+
+    public DbSet<PositionTechnologyTag> PositionTechnologyTags =>
+        Set<PositionTechnologyTag>();
+
+    public DbSet<CandidateCv> CandidateCvs =>
+        Set<CandidateCv>();
+
+    public DbSet<CandidateCvProject> CandidateCvProjects =>
+        Set<CandidateCvProject>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -140,13 +157,128 @@ public class ApplicationDbContext : IdentityDbContext
 
             entity.HasOne(projectTag => projectTag.CandidateProject)
                 .WithMany(project => project.ProjectTechnologyTags)
-                .HasForeignKey(projectTag => projectTag.CandidateProjectId)
+                .HasForeignKey(projectTag =>
+                    projectTag.CandidateProjectId)
                 .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasOne(projectTag => projectTag.TechnologyTag)
                 .WithMany(tag => tag.ProjectTechnologyTags)
-                .HasForeignKey(projectTag => projectTag.TechnologyTagId)
+                .HasForeignKey(projectTag =>
+                    projectTag.TechnologyTagId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<Position>(entity =>
+        {
+            entity.HasIndex(position => new
+            {
+                position.IsActive,
+                position.UpdatedAtUtc
+            });
+        });
+
+        builder.Entity<PositionTemplateAttribute>(entity =>
+        {
+            entity.HasKey(templateAttribute => new
+            {
+                templateAttribute.PositionId,
+                templateAttribute.AttributeDefinitionId
+            });
+
+            entity.HasIndex(templateAttribute => new
+            {
+                templateAttribute.PositionId,
+                templateAttribute.DisplayOrder
+            })
+                .IsUnique();
+
+            entity.HasOne(templateAttribute =>
+                    templateAttribute.Position)
+                .WithMany(position =>
+                    position.TemplateAttributes)
+                .HasForeignKey(templateAttribute =>
+                    templateAttribute.PositionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(templateAttribute =>
+                    templateAttribute.AttributeDefinition)
+                .WithMany()
+                .HasForeignKey(templateAttribute =>
+                    templateAttribute.AttributeDefinitionId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        builder.Entity<PositionTechnologyTag>(entity =>
+        {
+            entity.HasKey(positionTag => new
+            {
+                positionTag.PositionId,
+                positionTag.TechnologyTagId
+            });
+
+            entity.HasOne(positionTag => positionTag.Position)
+                .WithMany(position =>
+                    position.PositionTechnologyTags)
+                .HasForeignKey(positionTag =>
+                    positionTag.PositionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(positionTag =>
+                    positionTag.TechnologyTag)
+                .WithMany()
+                .HasForeignKey(positionTag =>
+                    positionTag.TechnologyTagId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<CandidateCv>(entity =>
+        {
+            entity.HasIndex(cv => new
+            {
+                cv.CandidateProfileId,
+                cv.PositionId
+            })
+                .IsUnique();
+
+            entity.HasIndex(cv => new
+            {
+                cv.Status,
+                cv.UpdatedAtUtc
+            });
+
+            entity.HasOne(cv => cv.CandidateProfile)
+                .WithMany()
+                .HasForeignKey(cv =>
+                    cv.CandidateProfileId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(cv => cv.Position)
+                .WithMany()
+                .HasForeignKey(cv =>
+                    cv.PositionId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<CandidateCvProject>(entity =>
+        {
+            entity.HasKey(cvProject => new
+            {
+                cvProject.CandidateCvId,
+                cvProject.CandidateProjectId
+            });
+
+            entity.HasOne(cvProject => cvProject.CandidateCv)
+                .WithMany(cv => cv.SelectedProjects)
+                .HasForeignKey(cvProject =>
+                    cvProject.CandidateCvId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(cvProject =>
+                    cvProject.CandidateProject)
+                .WithMany()
+                .HasForeignKey(cvProject =>
+                    cvProject.CandidateProjectId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         builder.Entity<AttributeDefinition>().HasData(
@@ -325,6 +457,82 @@ public class ApplicationDbContext : IdentityDbContext
                 Id = 8,
                 AttributeDefinitionId = 14,
                 Label = "Fluent"
+            });
+
+        builder.Entity<Position>().HasData(
+            new
+            {
+                Id = 1,
+                Title = "Junior ASP.NET Core Developer",
+                Location = "Riyadh, Saudi Arabia",
+                EmploymentType = "Full-time",
+                Description = "Build and maintain modern web applications using ASP.NET Core and Entity Framework Core.",
+                IsActive = true,
+                CreatedAtUtc = new DateTimeOffset(
+                    2026, 9, 20, 8, 0, 0,
+                    TimeSpan.Zero),
+                UpdatedAtUtc = new DateTimeOffset(
+                    2026, 9, 20, 8, 0, 0,
+                    TimeSpan.Zero)
+            },
+            new
+            {
+                Id = 2,
+                Title = "Frontend Developer",
+                Location = "Remote",
+                EmploymentType = "Full-time",
+                Description = "Create responsive, accessible user interfaces for the Perfect Career platform.",
+                IsActive = true,
+                CreatedAtUtc = new DateTimeOffset(
+                    2026, 9, 20, 9, 0, 0,
+                    TimeSpan.Zero),
+                UpdatedAtUtc = new DateTimeOffset(
+                    2026, 9, 20, 9, 0, 0,
+                    TimeSpan.Zero)
+            });
+
+        builder.Entity<PositionTemplateAttribute>().HasData(
+            new
+            {
+                PositionId = 1,
+                AttributeDefinitionId = 8,
+                DisplayOrder = 1
+            },
+            new
+            {
+                PositionId = 1,
+                AttributeDefinitionId = 9,
+                DisplayOrder = 2
+            },
+            new
+            {
+                PositionId = 1,
+                AttributeDefinitionId = 10,
+                DisplayOrder = 3
+            },
+            new
+            {
+                PositionId = 1,
+                AttributeDefinitionId = 14,
+                DisplayOrder = 4
+            },
+            new
+            {
+                PositionId = 2,
+                AttributeDefinitionId = 8,
+                DisplayOrder = 1
+            },
+            new
+            {
+                PositionId = 2,
+                AttributeDefinitionId = 9,
+                DisplayOrder = 2
+            },
+            new
+            {
+                PositionId = 2,
+                AttributeDefinitionId = 14,
+                DisplayOrder = 3
             });
     }
 }

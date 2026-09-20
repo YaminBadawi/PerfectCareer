@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PerfectCareer.Web.Data;
 
@@ -11,9 +12,11 @@ using PerfectCareer.Web.Data;
 namespace PerfectCareer.Web.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260920091347_AddPositions")]
+    partial class AddPositions
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -473,65 +476,6 @@ namespace PerfectCareer.Web.Data.Migrations
                         });
                 });
 
-            modelBuilder.Entity("PerfectCareer.Web.Models.Cvs.CandidateCv", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("CandidateProfileId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTimeOffset>("CreatedAtUtc")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<int>("PositionId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTimeOffset?>("PublishedAtUtc")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<byte[]>("RowVersion")
-                        .IsConcurrencyToken()
-                        .IsRequired()
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("rowversion");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("int");
-
-                    b.Property<DateTimeOffset>("UpdatedAtUtc")
-                        .HasColumnType("datetimeoffset");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("PositionId");
-
-                    b.HasIndex("CandidateProfileId", "PositionId")
-                        .IsUnique();
-
-                    b.HasIndex("Status", "UpdatedAtUtc");
-
-                    b.ToTable("CandidateCvs");
-                });
-
-            modelBuilder.Entity("PerfectCareer.Web.Models.Cvs.CandidateCvProject", b =>
-                {
-                    b.Property<int>("CandidateCvId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("CandidateProjectId")
-                        .HasColumnType("int");
-
-                    b.HasKey("CandidateCvId", "CandidateProjectId");
-
-                    b.HasIndex("CandidateProjectId");
-
-                    b.ToTable("CandidateCvProjects");
-                });
-
             modelBuilder.Entity("PerfectCareer.Web.Models.Positions.Position", b =>
                 {
                     b.Property<int>("Id")
@@ -949,44 +893,6 @@ namespace PerfectCareer.Web.Data.Migrations
                     b.Navigation("AttributeDefinition");
                 });
 
-            modelBuilder.Entity("PerfectCareer.Web.Models.Cvs.CandidateCv", b =>
-                {
-                    b.HasOne("PerfectCareer.Web.Models.Profiles.CandidateProfile", "CandidateProfile")
-                        .WithMany()
-                        .HasForeignKey("CandidateProfileId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("PerfectCareer.Web.Models.Positions.Position", "Position")
-                        .WithMany()
-                        .HasForeignKey("PositionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("CandidateProfile");
-
-                    b.Navigation("Position");
-                });
-
-            modelBuilder.Entity("PerfectCareer.Web.Models.Cvs.CandidateCvProject", b =>
-                {
-                    b.HasOne("PerfectCareer.Web.Models.Cvs.CandidateCv", "CandidateCv")
-                        .WithMany("SelectedProjects")
-                        .HasForeignKey("CandidateCvId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("PerfectCareer.Web.Models.Projects.CandidateProject", "CandidateProject")
-                        .WithMany()
-                        .HasForeignKey("CandidateProjectId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("CandidateCv");
-
-                    b.Navigation("CandidateProject");
-                });
-
             modelBuilder.Entity("PerfectCareer.Web.Models.Positions.PositionTechnologyTag", b =>
                 {
                     b.HasOne("PerfectCareer.Web.Models.Positions.Position", "Position")
@@ -1110,11 +1016,6 @@ namespace PerfectCareer.Web.Data.Migrations
                     b.Navigation("CandidateProject");
 
                     b.Navigation("TechnologyTag");
-                });
-
-            modelBuilder.Entity("PerfectCareer.Web.Models.Cvs.CandidateCv", b =>
-                {
-                    b.Navigation("SelectedProjects");
                 });
 
             modelBuilder.Entity("PerfectCareer.Web.Models.Positions.Position", b =>

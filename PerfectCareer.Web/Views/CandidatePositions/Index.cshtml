@@ -1,0 +1,163 @@
+﻿@using PerfectCareer.Web.Models.Cvs
+@using PerfectCareer.Web.ViewModels.Positions
+@model CandidatePositionsViewModel
+
+@{
+    ViewData["Title"] = "Available positions";
+}
+
+@section Styles {
+    <link rel="stylesheet"
+          href="~/css/Pages_/positions.css"
+          asp-append-version="true" />
+}
+
+<div class="pc-positions-page">
+    <div class="container-xl pc-positions-shell">
+        <header class="pc-positions-heading">
+            <div>
+                <p class="pc-positions-eyebrow">
+                    POSITIONS
+                </p>
+
+                <h1>Available positions</h1>
+
+                <p class="pc-positions-subtitle">
+                    Browse positions and create a tailored CV
+                    for the right opportunity.
+                </p>
+            </div>
+
+            <p class="pc-positions-count">
+                @Model.Positions.Count
+                @(Model.Positions.Count == 1
+                    ? "position available"
+                    : "positions available")
+            </p>
+        </header>
+
+        @if (Model.Positions.Count == 0)
+        {
+            <section class="pc-positions-empty">
+                <h2>No positions available</h2>
+
+                <p>
+                    There are no active positions at the moment.
+                    Please check again later.
+                </p>
+            </section>
+        }
+        else
+        {
+            <section class="pc-position-list"
+                     aria-label="Available positions">
+
+                @foreach (var position in Model.Positions)
+                {
+                    var buttonText =
+                        position.CvStatus switch
+                        {
+                            CandidateCvStatus.Draft =>
+                                "Continue application",
+
+                            CandidateCvStatus.Published =>
+                                "View application",
+
+                            _ => "Apply now"
+                        };
+
+                    <article class="pc-position-card">
+                        <div class="pc-position-main">
+                            <div class="pc-position-title-row">
+                                <div>
+                                    <h2>@position.Title</h2>
+
+                                    <p class="pc-position-meta">
+                                        <span>@position.Location</span>
+                                        <span aria-hidden="true">•</span>
+                                        <span>@position.EmploymentType</span>
+                                    </p>
+                                </div>
+
+                                @if (position.CvStatus is not null)
+                                {
+                                    <span class="pc-application-status
+                                        @(position.CvStatus ==
+                                            CandidateCvStatus.Published
+                                            ? "published"
+                                            : "draft")">
+                                        @(position.CvStatus ==
+                                            CandidateCvStatus.Published
+                                            ? "Published"
+                                            : "Draft")
+                                    </span>
+                                }
+                            </div>
+
+                            <p class="pc-position-description">
+                                @position.Description
+                            </p>
+
+                            @if (position.TechnologyTags.Count > 0)
+                            {
+                                <div class="pc-position-tags"
+                                     aria-label="Technologies">
+
+                                    @foreach (var technologyTag
+                                        in position.TechnologyTags)
+                                    {
+                                        <span>@technologyTag</span>
+                                    }
+                                </div>
+                            }
+
+                            @if (position.RequiredAttributes.Count > 0)
+                            {
+                                <div class="pc-position-requirements">
+                                    <h3>
+                                        Required profile information
+                                    </h3>
+
+                                    <div>
+                                        @foreach (var requiredAttribute
+                                            in position.RequiredAttributes)
+                                        {
+                                            <span>
+                                                @requiredAttribute
+                                            </span>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        </div>
+
+                        <div class="pc-position-action">
+                            <form asp-controller="CandidatePositions"
+                                  asp-action="Apply"
+                                  method="post">
+
+                                <input type="hidden"
+                                       name="id"
+                                       value="@position.Id" />
+
+                                <button type="submit"
+                                        class="btn btn-outline-primary">
+                                    @buttonText
+                                </button>
+                            </form>
+                        </div>
+                    </article>
+                }
+            </section>
+        }
+
+        <footer class="pc-positions-note">
+            <span aria-hidden="true">i</span>
+
+            <p>
+                Your profile information and selected projects
+                will be reused when you create a CV.
+            </p>
+        </footer>
+    </div>
+</div>

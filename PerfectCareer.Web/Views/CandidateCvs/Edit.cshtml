@@ -1,0 +1,613 @@
+﻿@using System.Globalization
+@using PerfectCareer.Web.Models.Attributes
+@using PerfectCareer.Web.Models.Cvs
+@using PerfectCareer.Web.Services
+@using PerfectCareer.Web.ViewModels.Cvs
+@inject MarkdownRenderer MarkdownRenderer
+@model CandidateCvEditViewModel
+
+@{
+    ViewData["Title"] = $"CV - {Model.PositionTitle}";
+
+    var isReadOnly =
+        Model.Status == CandidateCvStatus.Published;
+
+    var visibleProjects =
+        isReadOnly
+            ? Model.Projects
+                .Where(project => project.IsSelected)
+                .ToArray()
+            : Model.Projects.ToArray();
+
+    string FormatMonth(DateOnly date) =>
+        date.ToString(
+            "MMM yyyy",
+            CultureInfo.InvariantCulture);
+
+    string GetCategoryLabel(
+        AttributeCategory category) =>
+        category switch
+        {
+            AttributeCategory.Certification =>
+                "Certification",
+
+            AttributeCategory.DomainKnowledge =>
+                "Domain Knowledge",
+
+            AttributeCategory.PersonalInformation =>
+                "Personal Information",
+
+            AttributeCategory.SoftSkills =>
+                "Soft Skills",
+
+            _ => category.ToString()
+        };
+}
+
+@section Styles {
+    <link rel="stylesheet"
+          href="~/css/Pages_/candidate-cv.css"
+          asp-append-version="true" />
+}
+
+<div class="pc-cv-page">
+    <div class="container-xl pc-cv-shell">
+        <header class="pc-cv-heading">
+            <div>
+                <a class="pc-cv-back"
+                   asp-controller="CandidatePositions"
+                   asp-action="Index">
+                    ← Back to positions
+                </a>
+
+                <p class="pc-cv-eyebrow">
+                    TAILORED CV
+                </p>
+
+                <h1>@Model.PositionTitle</h1>
+
+                <p class="pc-cv-position-meta">
+                    @Model.PositionLocation
+                    <span aria-hidden="true">•</span>
+                    @Model.EmploymentType
+                </p>
+            </div>
+
+            <div class="pc-cv-heading-actions">
+                <span class="pc-cv-status
+                    @(isReadOnly
+                        ? "published"
+                        : "draft")">
+                    @(isReadOnly
+                        ? "Published"
+                        : "Draft")
+                </span>
+
+                @if (isReadOnly)
+                {
+                    <form asp-controller="CandidateCvs"
+                          asp-action="Reopen"
+                          method="post">
+
+                        <input type="hidden"
+                               name="id"
+                               value="@Model.Id" />
+
+                        <input type="hidden"
+                               name="rowVersion"
+                               value="@Model.CvRowVersion" />
+
+                        <button type="submit"
+                                class="btn btn-outline-primary">
+                            Edit CV
+                        </button>
+                    </form>
+                }
+                else
+                {
+                    <form asp-controller="CandidateCvs"
+                          asp-action="Publish"
+                          method="post">
+
+                        <input type="hidden"
+                               name="id"
+                               value="@Model.Id" />
+
+                        <input type="hidden"
+                               name="rowVersion"
+                               value="@Model.CvRowVersion" />
+
+                        <button id="pc-cv-publish"
+                                type="submit"
+                                class="btn btn-primary"
+                                disabled="@(!Model.IsComplete)">
+                            Publish CV
+                        </button>
+                    </form>
+                }
+            </div>
+        </header>
+
+        @if (TempData["CvMessage"] is string message)
+        {
+            <div class="alert alert-success alert-dismissible fade show"
+                 role="alert">
+                @message
+
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="alert"
+                        aria-label="Close">
+                </button>
+            </div>
+        }
+
+        @if (TempData["CvError"] is string error)
+        {
+            <div class="alert alert-danger alert-dismissible fade show"
+                 role="alert">
+                @error
+
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="alert"
+                        aria-label="Close">
+                </button>
+            </div>
+        }
+
+        <div id="pc-cv-save-error"
+             class="alert alert-danger"
+             role="alert"
+             hidden>
+        </div>
+
+        @if (!isReadOnly)
+        {
+            <div class="pc-cv-edit-note">
+                <div>
+                    <strong>Edit in place</strong>
+
+                    <p>
+                        Changes made here update the original
+                        values in your profile.
+                    </p>
+                </div>
+
+                <p id="pc-cv-save-status"
+                   class="text-success"
+                   role="status"
+                   aria-live="polite">
+                    All changes saved
+                </p>
+            </div>
+        }
+
+        <form id="pc-cv-security-form"
+              class="d-none">
+            @Html.AntiForgeryToken()
+        </form>
+
+        <main class="pc-cv-document">
+            <section class="pc-cv-profile-section">
+                <div class="pc-cv-photo">
+                    @if (!string.IsNullOrWhiteSpace(
+                        Model.Profile.PersonalPhotoUrl))
+                    {
+                        <img src="@Model.Profile.PersonalPhotoUrl"
+                             alt="@Model.Profile.FullName" />
+                    }
+                    else
+                    {
+                        <span>
+                            @Model.Profile.Initials
+                        </span>
+                    }
+                </div>
+
+                <div class="pc-cv-profile-content">
+                    <fieldset class="pc-cv-profile-fields"
+                              disabled="@isReadOnly">
+
+                        <input id="pc-cv-profile-row-version"
+                               type="hidden"
+                               value="@Model.Profile.RowVersion" />
+
+                        <div class="pc-cv-name-fields">
+                            <div>
+                                <label for="pc-cv-first-name">
+                                    First name
+                                </label>
+
+                                <input id="pc-cv-first-name"
+                                       type="text"
+                                       maxlength="100"
+                                       class="form-control pc-cv-profile-value
+                                @(string.IsNullOrWhiteSpace(
+                                    Model.Profile.FirstName)
+                                    ? "is-missing"
+                                    : null)"
+                                       value="@Model.Profile.FirstName" />
+                            </div>
+
+                            <div>
+                                <label for="pc-cv-last-name">
+                                    Last name
+                                </label>
+
+                                <input id="pc-cv-last-name"
+                                       type="text"
+                                       maxlength="100"
+                                       class="form-control pc-cv-profile-value
+                                @(string.IsNullOrWhiteSpace(
+                                    Model.Profile.LastName)
+                                    ? "is-missing"
+                                    : null)"
+                                       value="@Model.Profile.LastName" />
+                            </div>
+                        </div>
+
+                        <div class="pc-cv-location-field">
+                            <label for="pc-cv-location">
+                                Location
+                            </label>
+
+                            <input id="pc-cv-location"
+                                   type="text"
+                                   maxlength="150"
+                                   class="form-control pc-cv-profile-value
+                            @(string.IsNullOrWhiteSpace(
+                                Model.Profile.Location)
+                                ? "is-missing"
+                                : null)"
+                                   value="@Model.Profile.Location" />
+                        </div>
+                    </fieldset>
+
+                    @if (!isReadOnly)
+                    {
+                        <a class="pc-cv-photo-link"
+                           asp-controller="CandidateProfile"
+                           asp-action="Edit">
+                            Change personal photo
+                        </a>
+                    }
+                </div>
+            </section>
+
+            <section class="pc-cv-position-summary">
+                <p class="pc-cv-section-eyebrow">
+                    POSITION
+                </p>
+
+                <h2>@Model.PositionTitle</h2>
+
+                <p>@Model.PositionDescription</p>
+            </section>
+
+            <section class="pc-cv-section">
+                <div class="pc-cv-section-heading">
+                    <div>
+                        <p class="pc-cv-section-eyebrow">
+                            PROFILE INFORMATION
+                        </p>
+
+                        <h2>Required information</h2>
+                    </div>
+
+                    @if (!isReadOnly)
+                    {
+                        <p>
+                            Empty values are highlighted in red.
+                        </p>
+                    }
+                </div>
+
+                @if (Model.Attributes.Count == 0)
+                {
+                    <div class="pc-cv-empty">
+                        No additional information is required
+                        for this position.
+                    </div>
+                }
+                else
+                {
+                    <fieldset class="pc-cv-attribute-list"
+                              disabled="@isReadOnly">
+
+                        @foreach (var cvAttribute in Model.Attributes)
+                        {
+                            <article class="pc-cv-attribute
+                                @(cvAttribute.IsMissing
+                                    ? "missing"
+                                    : null)"
+                                     data-cv-attribute="@cvAttribute.Id">
+
+                                <div class="pc-cv-attribute-label">
+                                    <span>
+                                        @GetCategoryLabel(
+                                            cvAttribute.Category)
+                                    </span>
+
+                                    <h3>@cvAttribute.Name</h3>
+
+                                    <p>@cvAttribute.Description</p>
+                                </div>
+
+                                <div class="pc-cv-attribute-control">
+                                    @switch (cvAttribute.DataType)
+                                    {
+                                        case AttributeDataType.Text:
+                                        case AttributeDataType.ExternalImage:
+                                            <input type="text"
+                                                   class="form-control pc-cv-attribute-value"
+                                                   value="@cvAttribute.TextValue"
+                                                   data-definition-id="@cvAttribute.Id"
+                                                   data-data-type="@((int)cvAttribute.DataType)"
+                                                   data-row-version="@cvAttribute.RowVersion" />
+                                            break;
+
+                                        case AttributeDataType.MarkdownText:
+                                            <textarea class="form-control pc-cv-attribute-value"
+                                                      rows="5"
+                                                      data-definition-id="@cvAttribute.Id"
+                                                      data-data-type="@((int)cvAttribute.DataType)"
+                                                      data-row-version="@cvAttribute.RowVersion">@cvAttribute.TextValue</textarea>
+                                            break;
+
+                                        case AttributeDataType.Number:
+                                            <input type="number"
+                                                   step="any"
+                                                   class="form-control pc-cv-attribute-value"
+                                                   value="@(cvAttribute.NumberValue?.ToString(
+                                                                                                   null,
+                                                                                                   CultureInfo.InvariantCulture))"
+                                                   data-definition-id="@cvAttribute.Id"
+                                                   data-data-type="@((int)cvAttribute.DataType)"
+                                                   data-row-version="@cvAttribute.RowVersion" />
+                                            break;
+
+                                        case AttributeDataType.Date:
+                                            <input type="date"
+                                                   class="form-control pc-cv-attribute-value"
+                                                   value="@(cvAttribute.DateValue?.ToString(
+                                                                                                   "yyyy-MM-dd",
+                                                                                                   CultureInfo.InvariantCulture))"
+                                                   data-definition-id="@cvAttribute.Id"
+                                                   data-data-type="@((int)cvAttribute.DataType)"
+                                                   data-row-version="@cvAttribute.RowVersion" />
+                                            break;
+
+                                        case AttributeDataType.Period:
+                                            <div class="pc-cv-period">
+                                                <div>
+                                                    <label>
+                                                        Start date
+                                                    </label>
+
+                                                    <input type="date"
+                                                           class="form-control pc-cv-attribute-value"
+                                                           value="@(cvAttribute.PeriodStart?.ToString(
+                                                                                                                   "yyyy-MM-dd",
+                                                                                                                   CultureInfo.InvariantCulture))"
+                                                           data-definition-id="@cvAttribute.Id"
+                                                           data-data-type="@((int)cvAttribute.DataType)"
+                                                           data-period-part="start"
+                                                           data-row-version="@cvAttribute.RowVersion" />
+                                                </div>
+
+                                                <div>
+                                                    <label>
+                                                        End date
+                                                    </label>
+
+                                                    <input type="date"
+                                                           class="form-control pc-cv-attribute-value"
+                                                           value="@(cvAttribute.PeriodEnd?.ToString(
+                                                                                                                   "yyyy-MM-dd",
+                                                                                                                   CultureInfo.InvariantCulture))"
+                                                           data-definition-id="@cvAttribute.Id"
+                                                           data-data-type="@((int)cvAttribute.DataType)"
+                                                           data-period-part="end"
+                                                           data-row-version="@cvAttribute.RowVersion" />
+                                                </div>
+                                            </div>
+                                            break;
+
+                                        case AttributeDataType.Boolean:
+                                            <div class="form-check">
+                                                <input type="checkbox"
+                                                       class="form-check-input pc-cv-attribute-value"
+                                                       checked="@(cvAttribute.BooleanValue == true)"
+                                                       data-definition-id="@cvAttribute.Id"
+                                                       data-data-type="@((int)cvAttribute.DataType)"
+                                                       data-row-version="@cvAttribute.RowVersion" />
+
+                                                <label class="form-check-label">
+                                                    Available
+                                                </label>
+                                            </div>
+                                            break;
+
+                                        case AttributeDataType.SingleChoice:
+                                            <select class="form-select pc-cv-attribute-value"
+                                                    data-definition-id="@cvAttribute.Id"
+                                                    data-data-type="@((int)cvAttribute.DataType)"
+                                                    data-row-version="@cvAttribute.RowVersion">
+
+                                                <option value="">
+                                                    Select an option
+                                                </option>
+
+                                                @foreach (var option
+                                                    in cvAttribute.Options)
+                                                {
+                                                    <option value="@option.Id"
+                                                            selected="@(option.Id ==
+                                                                                                                        cvAttribute.SelectedOptionId)">
+                                                        @option.Label
+                                                    </option>
+                                                }
+                                            </select>
+                                            break;
+                                    }
+
+                                    @if (cvAttribute.IsMissing &&
+                                         !isReadOnly)
+                                    {
+                                        <p class="pc-cv-missing-message">
+                                            This information is required.
+                                        </p>
+                                    }
+                                </div>
+                            </article>
+                        }
+                    </fieldset>
+                }
+            </section>
+
+            <section class="pc-cv-section">
+                <div class="pc-cv-section-heading">
+                    <div>
+                        <p class="pc-cv-section-eyebrow">
+                            PROJECTS
+                        </p>
+
+                        <h2>Relevant projects</h2>
+                    </div>
+
+                    @if (!isReadOnly)
+                    {
+                        <p>
+                            Select only projects relevant to
+                            this position.
+                        </p>
+                    }
+                </div>
+
+                @if (visibleProjects.Length == 0)
+                {
+                    <div class="pc-cv-empty">
+                        @(isReadOnly
+                            ? "No projects were selected for this CV."
+                            : "You do not have any projects yet.")
+                    </div>
+
+                    @if (!isReadOnly)
+                    {
+                        <a class="btn btn-outline-primary mt-3"
+                           asp-controller="CandidateProjects"
+                           asp-action="Create">
+                            Add project
+                        </a>
+                    }
+                }
+                else
+                {
+                    <form asp-controller="CandidateCvs"
+                          asp-action="SaveProjects"
+                          method="post">
+
+                        <input type="hidden"
+                               name="id"
+                               value="@Model.Id" />
+
+                        <input type="hidden"
+                               name="rowVersion"
+                               value="@Model.CvRowVersion" />
+
+                        <fieldset disabled="@isReadOnly">
+                            <div class="pc-cv-project-list">
+                                @foreach (var project in visibleProjects)
+                                {
+                                    <label class="pc-cv-project
+                                        @(project.IsSelected
+                                            ? "selected"
+                                            : null)">
+
+                                        @if (!isReadOnly)
+                                        {
+                                            <input type="checkbox"
+                                                   name="selectedProjectIds"
+                                                   value="@project.Id"
+                                                   checked="@project.IsSelected"
+                                                   class="form-check-input pc-cv-project-choice" />
+                                        }
+
+                                        <span class="pc-cv-project-content">
+                                            <strong>@project.Name</strong>
+
+                                            <small>
+                                                @FormatMonth(project.StartDate)
+                                                &ndash;
+                                                @FormatMonth(project.EndDate)
+                                            </small>
+
+                                            <span class="pc-cv-project-description">
+                                                @Html.Raw(
+                                                    MarkdownRenderer.ToHtml(
+                                                        project.Description))
+                                            </span>
+
+                                            @if (project.TechnologyTags.Count > 0)
+                                            {
+                                                <span class="pc-cv-project-tags">
+                                                    @foreach (var technologyTag
+                                                        in project.TechnologyTags)
+                                                    {
+                                                        <span>
+                                                            @technologyTag
+                                                        </span>
+                                                    }
+                                                </span>
+                                            }
+                                        </span>
+                                    </label>
+                                }
+                            </div>
+
+                            @if (!isReadOnly)
+                            {
+                                <button type="submit"
+                                        class="btn btn-outline-primary mt-3">
+                                    Save project selection
+                                </button>
+                            }
+                        </fieldset>
+                    </form>
+                }
+            </section>
+        </main>
+
+        @if (!isReadOnly && !Model.IsComplete)
+        {
+            <p id="pc-cv-publish-help"
+               class="pc-cv-publish-help">
+                Complete all highlighted information before publishing.
+            </p>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    @if (!isReadOnly)
+    {
+        <script>
+            window.perfectCareerCv = {
+                profileSaveUrl:
+                    '@Url.Action(
+                 "Save",
+                 "CandidateProfileAutoSave")',
+
+                attributeSaveUrl:
+                    '@Url.Action(
+                 "SaveAttributeValue",
+                "CandidateProfile")'
+            };
+        </script>
+
+        <script src="~/js/candidate-cv.js"
+                asp-append-version="true">
+        </script>
+    }
+}

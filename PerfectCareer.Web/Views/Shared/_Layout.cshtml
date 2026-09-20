@@ -2,10 +2,27 @@
     var currentController =
         ViewContext.RouteData.Values["controller"]?.ToString();
 
-    var profileIsActive = string.Equals(
-        currentController,
-        "CandidateProfile",
-        StringComparison.OrdinalIgnoreCase);
+    var profileIsActive =
+        string.Equals(
+            currentController,
+            "CandidateProfile",
+            StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(
+            currentController,
+            "CandidateProjects",
+            StringComparison.OrdinalIgnoreCase);
+
+    var positionsIsActive =
+        string.Equals(
+            currentController,
+            "CandidatePositions",
+            StringComparison.OrdinalIgnoreCase);
+
+    var cvsIsActive =
+        string.Equals(
+            currentController,
+            "CandidateCvs",
+            StringComparison.OrdinalIgnoreCase);
 
     var accountName =
         User.Identity?.Name ?? "Account";
@@ -20,6 +37,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8" />
+
     <meta name="viewport"
           content="width=device-width, initial-scale=1" />
 
@@ -39,14 +57,17 @@
           href="~/PerfectCareer.Web.styles.css"
           asp-append-version="true" />
 
-    @await RenderSectionAsync("Styles", required: false)
+    @await RenderSectionAsync(
+        "Styles",
+        required: false)
 </head>
 
 <body class="pc-app-page">
     <header class="pc-app-header">
         <nav class="navbar navbar-expand-md navbar-light">
             <div class="container-xl">
-                <a class="pc-brand d-inline-flex align-items-center gap-2" asp-area=""
+                <a class="pc-brand d-inline-flex align-items-center gap-2"
+                   asp-area=""
                    asp-controller="CandidateProfile"
                    asp-action="Index">
 
@@ -74,24 +95,40 @@
 
                     <ul class="navbar-nav mx-auto gap-md-3">
                         <li class="nav-item">
-                            <a class="nav-link @(profileIsActive ? "active" : null)"
+                            <a class="nav-link
+                                      @(profileIsActive
+                                          ? "active"
+                                          : null)"
                                asp-area=""
                                asp-controller="CandidateProfile"
                                asp-action="Index"
-                               aria-current="@(profileIsActive ? "page" : null)">
+                               aria-current="@(profileIsActive
+                                   ? "page"
+                                   : null)">
                                 Profile
                             </a>
                         </li>
 
                         <li class="nav-item">
-                            <span class="nav-link disabled"
-                                  aria-disabled="true">
+                            <a class="nav-link
+                                      @(positionsIsActive
+                                          ? "active"
+                                          : null)"
+                               asp-area=""
+                               asp-controller="CandidatePositions"
+                               asp-action="Index"
+                               aria-current="@(positionsIsActive
+                                   ? "page"
+                                   : null)">
                                 Positions
-                            </span>
+                            </a>
                         </li>
 
                         <li class="nav-item">
-                            <span class="nav-link disabled"
+                            <span class="nav-link disabled
+                                         @(cvsIsActive
+                                             ? "active"
+                                             : null)"
                                   aria-disabled="true">
                                 My CVs
                             </span>
@@ -124,12 +161,17 @@
                                 </a>
                             </li>
 
-                            <li><hr class="dropdown-divider" /></li>
+                            <li>
+                                <hr class="dropdown-divider" />
+                            </li>
 
                             <li>
                                 <form asp-area="Identity"
                                       asp-page="/Account/Logout"
-                                      asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })"
+                                      asp-route-returnUrl="@Url.Action(
+                                          "Index",
+                                          "Home",
+                                          new { area = "" })"
                                       method="post">
 
                                     <button type="submit"
@@ -150,8 +192,11 @@
     </main>
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
+
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
 
-    @await RenderSectionAsync("Scripts", required: false)
+    @await RenderSectionAsync(
+        "Scripts",
+        required: false)
 </body>
 </html>
