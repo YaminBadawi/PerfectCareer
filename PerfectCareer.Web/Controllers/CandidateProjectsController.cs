@@ -1,6 +1,4 @@
-﻿using System.Text.Json;
-using System.Text.Json.Serialization;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -10,6 +8,8 @@ using PerfectCareer.Web.Models.Profiles;
 using PerfectCareer.Web.Models.Projects;
 using PerfectCareer.Web.ViewModels.Profiles;
 using PerfectCareer.Web.ViewModels.Projects;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace PerfectCareer.Web.Controllers;
 
@@ -589,9 +589,25 @@ public sealed class CandidateProjectsController : Controller
             return RedirectToAction(nameof(Index));
         }
 
+        if (originalRowVersion.Length != 8)
+        {
+            TempData["ProjectError"] =
+                "The project version is invalid. Reload and try again.";
+
+            return RedirectToAction(nameof(Index));
+        }
+
         _context.Entry(project)
             .Property(item => item.RowVersion)
             .OriginalValue = originalRowVersion;
+
+        var cvProjectLinks = await _context.CandidateCvProjects
+            .Where(link =>
+                link.CandidateProjectId == project.Id)
+            .ToArrayAsync(cancellationToken);
+
+        _context.CandidateCvProjects.RemoveRange(
+            cvProjectLinks);
 
         _context.CandidateProjects.Remove(project);
 

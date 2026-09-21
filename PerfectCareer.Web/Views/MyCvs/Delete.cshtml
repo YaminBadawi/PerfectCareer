@@ -1,0 +1,111 @@
+﻿@using PerfectCareer.Web.Models.Cvs
+@using PerfectCareer.Web.ViewModels.Cvs
+@model CandidateCvDeleteViewModel
+
+@{
+    ViewData["Title"] = "Delete CV";
+
+    var isPublished =
+        Model.Status == CandidateCvStatus.Published;
+}
+
+@section Styles {
+    <link rel="stylesheet"
+          href="~/css/Pages_/profile.css"
+          asp-append-version="true" />
+
+    <link rel="stylesheet"
+          href="~/css/Pages_/my-cvs.css"
+          asp-append-version="true" />
+}
+
+<div class="pc-profile-page">
+    <div class="container-xl pc-profile-shell">
+        <partial name="~/Views/CandidateProfile/_ProfileHeader.cshtml"
+                 model="Model.Profile" />
+
+        <div class="pc-cv-delete-heading">
+            <div>
+                <p class="pc-card-eyebrow">CVS</p>
+
+                <h1>Delete CV</h1>
+
+                <p>
+                    Review the tailored CV before permanently deleting it.
+                </p>
+            </div>
+
+            <a class="btn btn-outline-secondary"
+               asp-controller="MyCvs"
+               asp-action="Index">
+                &larr; Back to My CVs
+            </a>
+        </div>
+
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <section class="pc-profile-card pc-cv-delete-card">
+                    <p class="pc-card-eyebrow text-danger">
+                        DANGER ZONE
+                    </p>
+
+                    <h2>Delete this CV?</h2>
+
+                    <div class="alert alert-warning mt-3"
+                         role="alert">
+                        This action cannot be undone. Your reusable profile
+                        information and projects will not be deleted.
+                    </div>
+
+                    <article class="pc-cv-delete-summary">
+                        <div>
+                            <h3>@Model.PositionTitle</h3>
+
+                            <p>
+                                @Model.PositionLocation
+                                <span aria-hidden="true">•</span>
+                                @Model.EmploymentType
+                            </p>
+                        </div>
+
+                        <span class="pc-cv-list-status @(isPublished ? "published" : "draft")">
+                            @(isPublished
+                                ? "Published"
+                                : "Draft")
+                        </span>
+
+                        <p class="pc-cv-delete-projects">
+                            @Model.SelectedProjectCount
+                            @(Model.SelectedProjectCount == 1
+                                ? "selected project"
+                                : "selected projects")
+                        </p>
+                    </article>
+
+                    <form asp-controller="MyCvs"
+                          asp-action="Delete"
+                          asp-route-id="@Model.Id"
+                          method="post">
+
+                        <input type="hidden"
+                               name="rowVersion"
+                               value="@Model.RowVersion" />
+
+                        <div class="pc-cv-delete-actions">
+                            <button type="submit"
+                                    class="btn btn-danger">
+                                Delete CV
+                            </button>
+
+                            <a class="btn btn-light"
+                               asp-controller="MyCvs"
+                               asp-action="Index">
+                                Cancel
+                            </a>
+                        </div>
+                    </form>
+                </section>
+            </div>
+        </div>
+    </div>
+</div>

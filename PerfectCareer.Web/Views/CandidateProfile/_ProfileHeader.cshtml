@@ -30,10 +30,21 @@
             "Info",
             StringComparison.OrdinalIgnoreCase);
 
-    var projectsIsActive = string.Equals(
-        currentController,
-        "CandidateProjects",
-        StringComparison.OrdinalIgnoreCase);
+    var projectsIsActive =
+        string.Equals(
+            currentController,
+            "CandidateProjects",
+            StringComparison.OrdinalIgnoreCase);
+
+    var cvsIsActive =
+        string.Equals(
+            currentController,
+            "CandidateCvs",
+            StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(
+            currentController,
+            "MyCvs",
+            StringComparison.OrdinalIgnoreCase);
 }
 
 <section class="pc-profile-hero position-relative">
@@ -55,7 +66,9 @@
         </div>
 
         <div class="flex-grow-1">
-            <h1 class="h3 fw-bold mb-1 text-break">@Model.FullName</h1>
+            <h1 class="h3 fw-bold mb-1 text-break">
+                @Model.FullName
+            </h1>
 
             <p class="pc-profile-role">
                 Candidate
@@ -106,8 +119,11 @@
         Projects
     </a>
 
-    <span class="pc-profile-tab disabled"
-          aria-disabled="true">
+    <a class="pc-profile-tab text-decoration-none @(cvsIsActive ? "active" : null)"
+       asp-area=""
+       asp-controller="MyCvs"
+       asp-action="Index"
+       aria-current="@(cvsIsActive ? "page" : null)">
         CVs
-    </span>
+    </a>
 </nav>

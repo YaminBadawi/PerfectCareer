@@ -22,6 +22,10 @@
         string.Equals(
             currentController,
             "CandidateCvs",
+            StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(
+            currentController,
+            "MyCvs",
             StringComparison.OrdinalIgnoreCase);
 
     var accountName =
@@ -125,13 +129,18 @@
                         </li>
 
                         <li class="nav-item">
-                            <span class="nav-link disabled
-                                         @(cvsIsActive
-                                             ? "active"
-                                             : null)"
-                                  aria-disabled="true">
+                            <a class="nav-link
+                                      @(cvsIsActive
+                                          ? "active"
+                                          : null)"
+                               asp-area=""
+                               asp-controller="MyCvs"
+                               asp-action="Index"
+                               aria-current="@(cvsIsActive
+                                   ? "page"
+                                   : null)">
                                 My CVs
-                            </span>
+                            </a>
                         </li>
                     </ul>
 
